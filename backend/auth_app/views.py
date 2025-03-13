@@ -21,10 +21,7 @@ class RegisterView(APIView):
         serializer = RegisterSerializer(data=request.data)
         if serializer.is_valid():
             user = serializer.save()
-            refresh = RefreshToken.for_user(user)
             return Response({
-                'refresh': str(refresh),
-                'access': str(refresh.access_token),
                 'message': 'User registered, check your email for verification code'
             }, status=status.HTTP_201_CREATED)
 
@@ -44,9 +41,11 @@ class VerifyEmailView(APIView):
                 user.is_verified = True
                 user.verification_code = None
                 user.save()
-
+                refresh = RefreshToken.for_user(user)
                 return Response({
-                'message': 'Email verified successfully'
+                    'message': 'Email verified successfully',
+                    'refresh': str(refresh),
+                    'access': str(refresh.access_token)
                 }, status=status.HTTP_200_OK)
             elif user.is_verified:
                 return Response({'message': 'Email already verified'}, status=status.HTTP_400_BAD_REQUEST)
