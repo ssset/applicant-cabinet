@@ -1,5 +1,6 @@
 from django.contrib.auth.models import AbstractUser, BaseUserManager
 from django.db import models
+import uuid
 
 
 class CustomUserManager(BaseUserManager):
@@ -13,6 +14,7 @@ class CustomUserManager(BaseUserManager):
         user = self.model(email=email, username=email, **extra_fields)
         user.set_password(password)
         user.role = role or 'applicant'
+        user.verification_code = str(uuid.uuid4())[:8]
         user.save(using=self._db)
 
         return user
@@ -36,6 +38,7 @@ class CustomUser(AbstractUser):
     email = models.EmailField(unique=True, verbose_name='Email')
     role = models.CharField(max_length=20, choices=ROLES, default='applicant', verbose_name='Role')
     is_verified = models.BooleanField(default=False, verbose_name='Email Verified')
+    verification_code = models.CharField(max_length=8, blank=True, null=True, verbose_name='Verification Code')
 
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = []
