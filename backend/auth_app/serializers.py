@@ -36,11 +36,11 @@ class RegisterSerializer(serializers.ModelSerializer):
         # TODO: заменить на генерацию случайного кода
         verification_code = '123456'
         # Временно отключаем отправку email
-        # send_mail(
-        #     subject='Verify your email',
-        #     message=f'Your verification code: {verification_code}',
-        #     from_email='from@example.com',
-        #     recipient_list=[user.email],
-        #     fail_silently=True,
-        # )
+        send_mail(
+            subject='Verify your email',
+            message=f'Your verification code: {verification_code}',
+            from_email='claimov@gmail.com',
+            recipient_list=[user.email],
+            fail_silently=True,
+        )
         return user
