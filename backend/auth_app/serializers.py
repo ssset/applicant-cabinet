@@ -11,7 +11,7 @@ class RegisterSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = CustomUser
-        fields = ['email', 'password', 'password2', 'role']
+        fields = ['email', 'password', 'password2', 'role', 'consent_to_data_processing']
         extra_kwargs = {
             'password': {'write_only': True},
             'role': {'required': False}
@@ -23,6 +23,9 @@ class RegisterSerializer(serializers.ModelSerializer):
         """
         if data['password'] != data['password2']:
             raise serializers.ValidationError('Passwords do not match')
+        if not data.get('consent_to_data_processing', False):
+            raise serializers.ValidationError('You must consent to data processing')
+        return data
 
         return data
 
@@ -31,7 +34,8 @@ class RegisterSerializer(serializers.ModelSerializer):
         user = CustomUser.objects.create_user(
             email=validated_data['email'],
             password=validated_data['password'],
-            role=validated_data.get('role', 'applicant')
+            role=validated_data.get('role', 'applicant'),
+            consent_to_data_processing=validated_data['consent_to_data_processing']
         )
 
         send_mail(

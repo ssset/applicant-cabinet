@@ -7,7 +7,7 @@ class CustomUserManager(BaseUserManager):
     """
     Кастомный менеджер для модели CustomUser, использующий email как уникальный идентификатор.
     """
-    def create_user(self, email, password, role=None, **extra_fields):
+    def create_user(self, email, password, consent_to_data_processing=None, role=None, **extra_fields):
         if not email:
             raise ValueError('The email field must be set')
         email = self.normalize_email(email)
@@ -15,6 +15,7 @@ class CustomUserManager(BaseUserManager):
         user.set_password(password)
         user.role = role or 'applicant'
         user.verification_code = str(uuid.uuid4())[:8]
+        user.consent_to_data_processing = consent_to_data_processing
         user.save(using=self._db)
 
         return user
@@ -39,6 +40,7 @@ class CustomUser(AbstractUser):
     role = models.CharField(max_length=20, choices=ROLES, default='applicant', verbose_name='Role')
     is_verified = models.BooleanField(default=False, verbose_name='Email Verified')
     verification_code = models.CharField(max_length=8, blank=True, null=True, verbose_name='Verification Code')
+    consent_to_data_processing = models.BooleanField(default=False, verbose_name='Consent to Data Processing')
 
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = []
