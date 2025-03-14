@@ -1,11 +1,12 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
-from .serializers import RegisterSerializer
+from .serializers import RegisterSerializer, ApplicantProfileSerializer
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.permissions import AllowAny
 from rest_framework.authentication import BaseAuthentication
 from django.contrib.auth import get_user_model
+from users.models import ApplicantProfile
 
 
 User = get_user_model()
@@ -50,4 +51,54 @@ class VerifyEmailView(APIView):
             elif user.is_verified:
                 return Response({'message': 'Email already verified'}, status=status.HTTP_400_BAD_REQUEST)
         except User.DoesNotExist:
-            return Response({'message':'User not found'}, status=status.HTTP_404_NOT_FOUND)
+            return Response({'message': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
+
+
+class ApplicantProfileView(APIView):
+    """
+    API для управления профилем абитуриента.
+    """
+
+    def get(self, request):
+        try:
+            profile = ApplicantProfile.objects.get(user=request.user)
+            serializer = ApplicantProfileSerializer(profile)
+
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        except ApplicantProfile.DoesNotExist:
+            return Response({'message': 'Profile not found'}, status = status.HTTP_404_NOT_FOUND)
+
+    def post(self, request):
+        try:
+            ApplicantProfile.objects.get(user=request.user)
+            return Response({'message':'Profile already exists'}, status=status.HTTP_400_BAD_REQUEST)
+
+        except ApplicantProfile.DoesNotExist:
+            serializer = ApplicantProfileSerializer(data=request.data)
+            if serializer.is_valid():
+                serializer.save(user=request.user)
+                return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def patch(self,request):
+        try:
+            profile = ApplicantProfile.objects.get(user=request.user)
+            serializer = ApplicantProfileSerializer(profile, data=request.data, partial=True)
+            if serializer.is_valid():
+                serializer.save()
+                return Response(serializer.data, status=status.HTTP_200_OK)
+
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        except ApplicantProfile.DoesNotExist:
+            return Response({'message': 'Profile not found'}, status=status.HTTP_400_BAD_REQUEST)
+
+    def delete(self, request):
+        try:
+            profile= ApplicantProfile.objects.get(user=request.user)
+            profile.delete()
+            return Response({'message': 'Profile delete'}, status=status.HTTP_204_NO_CONTENT)
+
+        except ApplicantProfile.DoesNotExist:
+            return Response({'message': 'Profile not found'}, status=status.HTTP_404_NOT_FOUND)
