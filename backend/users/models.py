@@ -52,3 +52,61 @@ class CustomUser(AbstractUser):
 
     def __str__(self):
         return self.email
+
+
+class ApplicantProfile(models.Model):
+    """
+    Профиль абитуриента с личными данными и документами.
+    """
+    user = models.OneToOneField(CustomUser, on_delete=models.CASCADE, related_name='applicant_profile',
+                                verbose_name='User')
+    photo = models.ImageField(upload_to='applicant_photos/', blank=True, null=True, verbose_name='Photo')
+    first_name = models.CharField(max_length=50, blank=True, verbose_name='First Name')
+    last_name = models.CharField(max_length=50, blank=True, verbose_name='Last Name')
+    middle_name = models.CharField(max_length=50, blank=True, verbose_name='Middle Name')
+    date_of_birth = models.DateField(blank=True, null=True, verbose_name='Date of Birth')
+    citizenship = models.CharField(max_length=50, blank=True, verbose_name='Citizenship')
+    birth_place = models.CharField(max_length=100, blank=True, verbose_name='Place of Birth')
+    # Документ, удостоверяющий личность
+    passport_series = models.CharField(max_length=10, blank=True, verbose_name='Passport Series')
+    passport_number = models.CharField(max_length=20, blank=True, verbose_name='Passport Number')
+    passport_issued_date = models.DateField(blank=True, null=True, verbose_name='Passport Issued Date')
+    passport_issued_by = models.CharField(max_length=100, blank=True, verbose_name='Passport Issued By')
+    snils = models.CharField(max_length=20, blank=True, verbose_name='SNILS')
+    # Адреса
+    registration_address = models.TextField(blank=True, verbose_name='Registration Address')
+    actual_address = models.TextField(blank=True, verbose_name='Actual Address')
+    phone = models.CharField(max_length=20, blank=True, verbose_name='Phone')
+    # Образование
+    education_type = models.CharField(max_length=50, blank=True, verbose_name='Education Type', choices=[
+        ('school', 'School'),
+        ('npo', 'NPO'),
+        ('other', 'Other'),
+    ])
+    education_institution = models.CharField(max_length=100, blank=True, verbose_name='Education Institution')
+    graduation_year = models.IntegerField(blank=True, null=True, verbose_name='Graduation Year')
+    document_type = models.CharField(max_length=20, blank=True, verbose_name='Document Type', choices=[
+        ('certificate', 'Certificate'),
+        ('diploma', 'Diploma'),
+    ])
+    document_series = models.CharField(max_length=10, blank=True, verbose_name='Document Series')
+    document_number = models.CharField(max_length=20, blank=True, verbose_name='Document Number')
+    # Дополнительная информация
+    foreign_languages = models.JSONField(blank=True, null=True, verbose_name='Foreign Languages')  # Список языков
+    attestation_photo = models.ImageField(upload_to='attestations/', blank=True, null=True,
+                                          verbose_name='Attestation Photo')
+    additional_info = models.TextField(blank=True, verbose_name='Additional Info')
+    # Родители
+    mother_full_name = models.CharField(max_length=100, blank=True, verbose_name='Mother Full Name')
+    mother_workplace = models.CharField(max_length=100, blank=True, verbose_name='Mother Workplace')
+    mother_phone = models.CharField(max_length=20, blank=True, verbose_name='Mother Phone')
+    father_full_name = models.CharField(max_length=100, blank=True, verbose_name='Father Full Name')
+    father_workplace = models.CharField(max_length=100, blank=True, verbose_name='Father Workplace')
+    father_phone = models.CharField(max_length=20, blank=True, verbose_name='Father Phone')
+
+    class Meta:
+        verbose_name = 'Applicant Profile'
+        verbose_name_plural = 'Applicant Profiles'
+
+    def __str__(self):
+        return f'Profile of {self.user}'
