@@ -36,3 +36,10 @@ class IsApplicant(permissions.BasePermission):
     def has_permission(self, request, view):
         return request.user.is_authenticated and request.user.role == 'applicant'
 
+
+class IsEmailVerified(permissions.BasePermission):
+    """
+    Проверка, что email пользователя верифицирован.
+    """
+    def has_permission(self, request, view):
+        return request.user.is_authenticated and request.user.is_verified
