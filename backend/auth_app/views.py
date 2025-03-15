@@ -3,6 +3,7 @@ from rest_framework.response import Response
 from rest_framework import status
 from .serializers import RegisterSerializer, ApplicantProfileSerializer
 from rest_framework_simplejwt.tokens import RefreshToken
+from .permissions import IsApplicant, IsEmailVerified
 from rest_framework.permissions import AllowAny
 from rest_framework.authentication import BaseAuthentication
 from django.contrib.auth import get_user_model
@@ -58,7 +59,8 @@ class ApplicantProfileView(APIView):
     """
     API для управления профилем абитуриента.
     """
-
+    permission_classes = [IsAuthenticated, IsEmailVerified, IsApplicant]
+    
     def get(self, request):
         try:
             profile = ApplicantProfile.objects.get(user=request.user)
