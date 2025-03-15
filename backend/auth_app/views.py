@@ -2,12 +2,12 @@ import logging
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
-from .serializers import RegisterSerializer, ApplicantProfileSerializer
+from .serializers import RegisterSerializer, ApplicantProfileSerializer, OrganizationSerializer
 from rest_framework_simplejwt.tokens import RefreshToken
-from .permissions import IsApplicant, IsEmailVerified
+from .permissions import IsApplicant, IsEmailVerified, IsAdminApp
 from rest_framework.permissions import IsAuthenticated
 from django.contrib.auth import get_user_model
-from users.models import ApplicantProfile
+from users.models import ApplicantProfile, Organization
 
 logger = logging.getLogger(__name__)
 User = get_user_model()
@@ -126,7 +126,7 @@ class AdminAppCreationView(APIView):
     authentication_classes = []
 
     def post(self, request):
-        if User.objects.filter(role='admin_app').exists()
+        if User.objects.filter(role='admin_app').exists():
             return Response ({'message': 'Admin app already exists'}, status=status.HTTP_400_BAD_REQUEST)
 
         serializer = RegisterSerializer(data=request.data)
@@ -139,4 +139,73 @@ class AdminAppCreationView(APIView):
             }, status=status.HTTP_201_CREATED)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    
+
+
+class OrganizationView(APIView):
+    """
+    API для управления организациями (доступно только для admin_app)
+    """
+    permission_classes = [IsAuthenticated, IsEmailVerified, IsAdminApp]
+
+    def get(self, request):
+        organizations = Organization.objects.all()
+        serializer = OrganizationSerializer(organizations, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def post(self, request):
+        serializer = OrganizationSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def patch(self, request):
+        try:
+            organization = Organization.objects.get(id=request.data.get('id'))
+            serializer = OrganizationSerializer(organization, data=request.data, partial=True)
+            if serializer.is_valid():
+                serializer.save()
+                return Response(serializer.data, status=status.HTTP_200_OK)
+
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        except Organization.DoesNotExist:
+            return Response({'message': 'Organization not found'}, status=status.HTTP_404_NOT_FOUND)
+
+    def delete(self, request):
+        try:
+            organization = Organization.objects.get(id=request.query_params.get('id'))
+            organization.delete()
+            return Response({'message': 'Organization deleted'}, status=status.HTTP_204_NO_CONTENT)
+
+        except Organization.DoesNotExist:
+            return Response({'message':'Organization not found'}, status=status.HTTP_404_NOT_FOUND)
+
+
+class AdminOrgCreationView(APIView):
+    """
+    Api для создания admin_org (доступно только admin_app).
+    """
+
+    permission_classes = [IsAuthenticated, IsEmailVerified, IsAdminApp]
+
+    def post(self, request):
+        serializer = RegisterSerializer(data=request.data)
+        if serializer.is_valid():
+            user = serializer.save()
+            user.role = 'admin_org'
+            organization_id = request.data.get('organization_id')
+            try:
+                organization = Organization.objects.get(id=organization_id)
+                user.organization = organization
+                user.save()
+                return Response({
+                    'message': 'Admin org registered, check your email for verification code'
+                }, status=status.HTTP_201_CREATED)
+
+            except Organization.DoesNotExist:
+                user.delete()
+                return Response({'message': 'Organization not found'}, status=status.HTTP_404_NOT_FOUND)
+
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
