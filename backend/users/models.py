@@ -54,6 +54,25 @@ class CustomUser(AbstractUser):
         return self.email
 
 
+class Organization(models.Model):
+    """
+    Модель для хранения данных об организации.
+    """
+
+    name = models.CharField(max_length=100, verbose_name='Name')
+    email = models.EmailField(verbose_name='Email')
+    phone = models.CharField(max_length=20, verbose_name='Phone')
+    address = models.TextField(verbose_name='Adress')
+    created_at = models.DateField(auto_now=True, verbose_name='Created At')
+    updated_at = models.DateField(auto_now=True, verbose_name='Updated at')
+
+    class Meta:
+        verbose_name = 'Organization'
+        verbose_name_plural = 'Organizations'
+
+    def __str__(self):
+        return self.name
+
 class ApplicantProfile(models.Model):
     """
     Профиль абитуриента с личными данными и документами.
