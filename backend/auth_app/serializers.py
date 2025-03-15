@@ -47,7 +47,7 @@ class RegisterSerializer(serializers.ModelSerializer):
         )
         return user
 
-class ApplicantProfileSerializer(serializers.ModelSerializer)
+class ApplicantProfileSerializer(serializers.ModelSerializer):
     """
     Сериализатор для профиля абитуриента.
     """
