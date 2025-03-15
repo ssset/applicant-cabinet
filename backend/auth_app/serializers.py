@@ -37,7 +37,7 @@ class RegisterSerializer(serializers.ModelSerializer):
             role=validated_data.get('role', 'applicant'),
             consent_to_data_processing=validated_data['consent_to_data_processing']
         )
-
+        print(user.verification_code)
         send_mail(
             subject='Verify your email',
             message=f'Your verification code: {user.verification_code}',
@@ -46,6 +46,7 @@ class RegisterSerializer(serializers.ModelSerializer):
             fail_silently=True,
         )
         return user
+
 
 class ApplicantProfileSerializer(serializers.ModelSerializer):
     """
