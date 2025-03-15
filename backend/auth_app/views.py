@@ -115,3 +115,28 @@ class ApplicantProfileView(APIView):
 
         except ApplicantProfile.DoesNotExist:
             return Response({'message': 'Profile not found'}, status=status.HTTP_404_NOT_FOUND)
+
+
+class AdminAppCreationView(APIView):
+    """
+    API для создания первого admin_app.
+    """
+
+    permission_classes = []
+    authentication_classes = []
+
+    def post(self, request):
+        if User.objects.filter(role='admin_app').exists()
+            return Response ({'message': 'Admin app already exists'}, status=status.HTTP_400_BAD_REQUEST)
+
+        serializer = RegisterSerializer(data=request.data)
+        if serializer.is_valid():
+            user = serializer.save()
+            user.role = 'admin_app'
+            user.save()
+            return Response({
+                'message': 'Admin app registered, check your email for verification code'
+            }, status=status.HTTP_201_CREATED)
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
