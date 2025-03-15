@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from users.models import CustomUser, ApplicantProfile
+from users.models import CustomUser, ApplicantProfile, Organization
 from django.core.mail import send_mail
 
 
@@ -70,3 +70,14 @@ class ApplicantProfileSerializer(serializers.ModelSerializer):
             if value and not isinstance(value, list):
                 raise serializers.ValidationError('Foreign languages must be a list')
             return value
+
+
+class OrganizationSerializer(serializers.ModelSerializer):
+    """
+    Сериализатор для организации.
+    """
+
+    class Meta:
+        model = Organization
+        fields = ['id', 'name', 'email', 'phone', 'address', 'created_at', 'updated_at']
+        
