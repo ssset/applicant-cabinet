@@ -6,7 +6,7 @@ from .serializers import RegisterSerializer, ApplicantProfileSerializer, Organiz
 from rest_framework_simplejwt.tokens import RefreshToken
 from .permissions import IsApplicant, IsEmailVerified, IsAdminApp
 from rest_framework.permissions import IsAuthenticated
-from django.contrib.auth import get_user_model
+from django.contrib.auth import get_user_model, authenticate
 from users.models import ApplicantProfile, Organization
 
 logger = logging.getLogger(__name__)
@@ -209,3 +209,50 @@ class AdminOrgCreationView(APIView):
                 return Response({'message': 'Organization not found'}, status=status.HTTP_404_NOT_FOUND)
 
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class LoginView(APIView):
+    """
+    API для входа пользователей с выдачей JWT токенов.
+    """
+
+    permission_classes = []
+    authentication_classes = []
+
+    def post(self, request):
+        logger.info(f'Login attempt with data: {request.data}')
+        email = request.data.get('email')
+        password = request.data.get('password')
+        user = authenticate(email=email, password=password)
+        if user:
+            if not user.is_verified:
+                return Response({'message': 'Email is not verified'}, status=status.HTTP_401_UNAUTHORIZED)
+
+            refresh = RefreshToken.for_user(user)
+            response = Response({
+                'refresh': str(refresh),
+                'access': str(refresh.access_token)
+            }, status=status.HTTP_200_OK)
+            response.set_cookie('refresh', str(refresh), httponly=True, secure=False)
+            response.set_cookie('access', str(refresh.access_token), httponly=True, secure=False)
+            logger.info(f'User {user.email} logged in successfully')
+            return response
+
+        logger.error(f'Invalid credentials for {email}')
+        return Response({'message': 'Invalid credentials'}, status=status.HTTP_401_UNAUTHORIZED)
+
+
+class LogoutView(APIView):
+    """
+    API для выхода пользователя с удалением токенов из куки.
+    """
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        logger.info(f'Logout attempt for user: {request.user.email}')
+        response = Response({'message': 'Logged out'},status=status.HTTP_200_OK)
+        response.delete_cookie('refresh')
+        response.delete_cookie('access')
+        logger.info(f'User {request.user.email} logged out successfully')
+        return response
+

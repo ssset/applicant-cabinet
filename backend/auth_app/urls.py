@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import RegisterView, VerifyEmailView, ApplicantProfileView, AdminAppCreationView, OrganizationView, AdminOrgCreationView
+from .views import RegisterView, VerifyEmailView, ApplicantProfileView, AdminAppCreationView, OrganizationView, AdminOrgCreationView, LoginView, LogoutView
 
 urlpatterns = [
     path('register/', RegisterView.as_view(), name='register'),
@@ -7,4 +7,6 @@ urlpatterns = [
     path('admin-app/create/', AdminAppCreationView.as_view(), name='admin_app_create'),
     path('organizations/', OrganizationView.as_view(), name='organizations'),
     path('admin-org/create/', AdminOrgCreationView.as_view(), name='admin_org_create'),
+    path('login/', LoginView.as_view(), name='login'),
+    path('logout/', LogoutView.as_view(), name='logout'),
 ]
