@@ -256,3 +256,53 @@ class LogoutView(APIView):
         logger.info(f'User {request.user.email} logged out successfully')
         return response
 
+
+class ModeratorView(APIView):
+    """
+    API для управления модераторами (доступно только для admin_org)
+    """
+
+    permission_classes = [IsAuthenticated, IsEmailVerified, IsAdminApp]
+
+    def post(self, request):
+        logger.info(f'Creating moderator with data: {request.data}')
+        serializer = RegisterSerializer(data=request.data)
+        if serializer.is_valid():
+            user = serializer.save()
+            user.role = 'moderator'
+            user.organization = request.user.organization
+            user.save()
+            return Response({
+                'message': 'Moderator registered, check email for verification code'
+            }, status=status.HTTP_201_CREATED)
+
+        logger.error(f'Serializer errors: {serializer.errors}')
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def get(self, request):
+        logger.info(f"Fetching moderators for organization: {request.user.organization}")
+        moderators = User.objects.filter(role='moderator', organization=request.user.organization)
+        serializer = RegisterSerializer(moderators, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def patch(self, request):
+        try:
+            user_id = request.data.get('id')
+            moderator = User.objects.get(id=user_id, role='moderator', organization=request.user.organization)
+            serializer = RegisterSerializer(moderator, data=request.data, partial=True)
+            if serializer.is_valid():
+                serializer.save()
+                return Response(serializer.data, status=status.HTTP_200_OK)
+
+        except User.DoesNotExist:
+            return Response({'message': 'Moderator not found'}, status=status.HTTP_404_NOT_FOUND)
+
+    def delete(self, request):
+        try:
+            user_id = request.query_params.get('id')
+            moderator = User.objects.get(id=user_id, role= 'moderator', organization=request.user.organization)
+            moderator.delete()
+            return Response({'message': 'Moderator deleted'}, status=status.HTTP_204_NO_CONTENT)
+
+        except User.DoesNotExist:
+            return Response({'message': 'Moderator not found'}, status=status.HTTP_404_NOT_FOUND)
