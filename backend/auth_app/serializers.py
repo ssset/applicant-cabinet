@@ -23,7 +23,7 @@ class RegisterSerializer(serializers.ModelSerializer):
         """
         if data['password'] != data['password2']:
             raise serializers.ValidationError('Passwords do not match')
-        if not data.get('consent_to_data_processing', False):
+        if not self.partial and not data.get('consent_to_data_processing', False):
             raise serializers.ValidationError('You must consent to data processing')
         return data
 

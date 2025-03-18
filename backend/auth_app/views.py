@@ -4,7 +4,7 @@ from rest_framework.response import Response
 from rest_framework import status
 from .serializers import RegisterSerializer, ApplicantProfileSerializer, OrganizationSerializer
 from rest_framework_simplejwt.tokens import RefreshToken
-from .permissions import IsApplicant, IsEmailVerified, IsAdminApp
+from .permissions import IsApplicant, IsEmailVerified, IsAdminApp, IsAdminOrg
 from rest_framework.permissions import IsAuthenticated
 from django.contrib.auth import get_user_model, authenticate
 from users.models import ApplicantProfile, Organization
@@ -262,7 +262,7 @@ class ModeratorView(APIView):
     API для управления модераторами (доступно только для admin_org)
     """
 
-    permission_classes = [IsAuthenticated, IsEmailVerified, IsAdminApp]
+    permission_classes = [IsAuthenticated, IsEmailVerified, IsAdminOrg]
 
     def post(self, request):
         logger.info(f'Creating moderator with data: {request.data}')
@@ -286,16 +286,32 @@ class ModeratorView(APIView):
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     def patch(self, request):
+        logger.info(f"ModeratorView PATCH: user={request.user}, authenticated={request.user.is_authenticated}, organization={request.user.organization}")
+        if not request.user.organization:
+            logger.error(f"User {request.user.email} has no organization assigned")
+            return Response({'message': 'User has no organization assigned'}, status=status.HTTP_400_BAD_REQUEST)
+
         try:
             user_id = request.data.get('id')
+            if not user_id:
+                logger.error("No user_id provided in request data")
+                return Response({'message': 'User ID is required'}, status=status.HTTP_400_BAD_REQUEST)
+
             moderator = User.objects.get(id=user_id, role='moderator', organization=request.user.organization)
             serializer = RegisterSerializer(moderator, data=request.data, partial=True)
             if serializer.is_valid():
                 serializer.save()
                 return Response(serializer.data, status=status.HTTP_200_OK)
+            else:
+                logger.error(f"Serializer errors: {serializer.errors}")
+                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
         except User.DoesNotExist:
+            logger.error(f"Moderator with id {user_id} not found")
             return Response({'message': 'Moderator not found'}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            logger.error(f"Unexpected error in ModeratorView.patch: {str(e)}")
+            return Response({'message': 'An unexpected error occurred'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     def delete(self, request):
         try:

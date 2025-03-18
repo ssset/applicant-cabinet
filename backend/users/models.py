@@ -7,7 +7,7 @@ class CustomUserManager(BaseUserManager):
     """
     Кастомный менеджер для модели CustomUser, использующий email как уникальный идентификатор.
     """
-    def create_user(self, email, password, consent_to_data_processing=None, role=None, **extra_fields):
+    def create_user(self, email, password, consent_to_data_processing=None, role=None, organization=None, **extra_fields):
         if not email:
             raise ValueError('The email field must be set')
         email = self.normalize_email(email)
@@ -16,6 +16,8 @@ class CustomUserManager(BaseUserManager):
         user.role = role or 'applicant'
         user.verification_code = str(uuid.uuid4())[:8]
         user.consent_to_data_processing = consent_to_data_processing
+        if organization:
+            user.organization = organization
         user.save(using=self._db)
 
         return user
@@ -24,34 +26,6 @@ class CustomUserManager(BaseUserManager):
         extra_fields.setdefault('is_staff', True)
         extra_fields.setdefault('is_superuser', True)
         return self.create_user(email, password, **extra_fields)
-
-
-class CustomUser(AbstractUser):
-    """
-    Кастомная модель пользователя с ролями и подтверждением email.
-    """
-    ROLES = (
-        ('admin_app', 'Admin App'),
-        ('admin_org', 'Admin Org'),
-        ('moderator', 'Moderator'),
-        ('applicant', 'Applicant'),
-    )
-    email = models.EmailField(unique=True, verbose_name='Email')
-    role = models.CharField(max_length=20, choices=ROLES, default='applicant', verbose_name='Role')
-    is_verified = models.BooleanField(default=False, verbose_name='Email Verified')
-    verification_code = models.CharField(max_length=8, blank=True, null=True, verbose_name='Verification Code')
-    consent_to_data_processing = models.BooleanField(default=False, verbose_name='Consent to Data Processing')
-
-    USERNAME_FIELD = 'email'
-    REQUIRED_FIELDS = []
-    objects = CustomUserManager()
-
-    class Meta:
-        verbose_name = 'User'
-        verbose_name_plural = 'Users'
-
-    def __str__(self):
-        return self.email
 
 
 class Organization(models.Model):
@@ -72,6 +46,37 @@ class Organization(models.Model):
 
     def __str__(self):
         return self.name
+
+
+class CustomUser(AbstractUser):
+    """
+    Кастомная модель пользователя с ролями и подтверждением email.
+    """
+    ROLES = (
+        ('admin_app', 'Admin App'),
+        ('admin_org', 'Admin Org'),
+        ('moderator', 'Moderator'),
+        ('applicant', 'Applicant'),
+    )
+    email = models.EmailField(unique=True, verbose_name='Email')
+    role = models.CharField(max_length=20, choices=ROLES, default='applicant', verbose_name='Role')
+    is_verified = models.BooleanField(default=False, verbose_name='Email Verified')
+    verification_code = models.CharField(max_length=8, blank=True, null=True, verbose_name='Verification Code')
+    consent_to_data_processing = models.BooleanField(default=False, verbose_name='Consent to Data Processing')
+    organization = models.ForeignKey(Organization, on_delete=models.SET_NULL, null=True, blank=True,
+                                     verbose_name='Organization')
+
+    USERNAME_FIELD = 'email'
+    REQUIRED_FIELDS = []
+    objects = CustomUserManager()
+
+    class Meta:
+        verbose_name = 'User'
+        verbose_name_plural = 'Users'
+
+    def __str__(self):
+        return self.email
+
 
 class ApplicantProfile(models.Model):
     """
