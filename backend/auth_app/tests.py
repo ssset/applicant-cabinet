@@ -1,7 +1,7 @@
 from rest_framework.test import APITestCase
 from rest_framework import status
 from django.urls import reverse
-from users.models import CustomUser, Organization
+from users.models import CustomUser, Organization, Building
 from django.contrib.auth import authenticate
 
 
@@ -11,6 +11,7 @@ class AuthTestCase(APITestCase):
         self.verify_url = reverse('verify_email')
         self.moderators_url = reverse('moderators')
         self.login_url = reverse('login')
+        self.buildings_url = reverse('buildings')
         self.user_data = {
             'email': 'test@example.com',
             'password': 'testpass123',
@@ -163,3 +164,173 @@ class AuthTestCase(APITestCase):
         response = self.client.delete(f"{self.moderators_url}?id={moderator.id}", format='json')
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
         self.assertEqual(CustomUser.objects.filter(email='mod3@example.com').count(), 0)
+
+
+    def test_create_building(self):
+        admin_data = {
+            'email': 'admin5@example.com',
+            'password': 'adminpass123',
+            'password2': 'adminpass123',
+            'consent_to_data_processing': True
+        }
+        self.client.post(self.register_url, admin_data, format='json')
+        admin = CustomUser.objects.get(email='admin5@example.com')
+        admin.is_verified = True
+        admin.role = 'admin_org'
+        admin.organization = self.org
+        admin.save()
+
+        # Логинимся перед запросом
+        self.client.credentials()  # Сбрасываем заголовки
+        self.login_user('admin5@example.com', 'adminpass123')
+
+        building_data = {
+            'name': 'Building 1',
+            'address': 'Test Address 1',
+            'phone': '+1234567890',
+            'email': 'building1@example.com'
+        }
+        response = self.client.post(self.buildings_url, building_data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response.data['name'], 'Building 1')
+        self.assertEqual(Building.objects.count(), 1)
+
+    def test_get_buildings(self):
+        admin_data = {
+            'email': 'admin6@example.com',
+            'password': 'adminpass123',
+            'password2': 'adminpass123',
+            'consent_to_data_processing': True
+        }
+        self.client.post(self.register_url, admin_data, format='json')
+        admin = CustomUser.objects.get(email='admin6@example.com')
+        admin.is_verified = True
+        admin.role = 'admin_org'
+        admin.organization = self.org
+        admin.save()
+
+        # Создаём корпус
+        Building.objects.create(
+            organization=self.org,
+            name='Building 1',
+            address='Test Address 1',
+            phone='+1234567890',
+            email='building1@example.com'
+        )
+
+        # Логинимся перед запросом
+        self.client.credentials()  # Сбрасываем заголовки
+        self.login_user('admin6@example.com', 'adminpass123')
+
+        response = self.client.get(self.buildings_url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 1)
+        self.assertEqual(response.data[0]['name'], 'Building 1')
+
+    # auth_app/tests.py
+    def test_patch_building(self):
+        admin_data = {
+            'email': 'admin7@example.com',
+            'password': 'adminpass123',
+            'password2': 'adminpass123',
+            'consent_to_data_processing': True
+        }
+        self.client.post(self.register_url, admin_data, format='json')
+        admin = CustomUser.objects.get(email='admin7@example.com')
+        admin.is_verified = True
+        admin.role = 'admin_org'
+        admin.organization = self.org
+        admin.save()
+
+        # Добавляем отладку
+        admin_refreshed = CustomUser.objects.get(email='admin7@example.com')
+
+        # Создаём корпус
+        building = Building.objects.create(
+            organization=self.org,
+            name='Building 1',
+            address='Test Address 1',
+            phone='+1234567890',
+            email='building1@example.com'
+        )
+
+        # Логинимся перед запросом
+        self.client.credentials()  # Сбрасываем заголовки
+        self.login_user('admin7@example.com', 'adminpass123')
+
+        updated_data = {
+            'id': building.id,
+            'address': 'Updated Address'
+        }
+        response = self.client.patch(self.buildings_url, updated_data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['address'], 'Updated Address')
+
+    def test_delete_building(self):
+        admin_data = {
+            'email': 'admin8@example.com',
+            'password': 'adminpass123',
+            'password2': 'adminpass123',
+            'consent_to_data_processing': True
+        }
+        self.client.post(self.register_url, admin_data, format='json')
+        admin = CustomUser.objects.get(email='admin8@example.com')
+        admin.is_verified = True
+        admin.role = 'admin_org'
+        admin.organization = self.org
+        admin.save()
+
+        # Создаём корпус
+        building = Building.objects.create(
+            organization=self.org,
+            name='Building 1',
+            address='Test Address 1',
+            phone='+1234567890',
+            email='building1@example.com'
+        )
+
+        # Логинимся перед запросом
+        self.client.credentials()  # Сбрасываем заголовки
+        self.login_user('admin8@example.com', 'adminpass123')
+
+        response = self.client.delete(f"{self.buildings_url}?id={building.id}", format='json')
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertEqual(Building.objects.count(), 0)
+
+    def test_duplicate_building(self):
+        admin_data = {
+            'email': 'admin9@example.com',
+            'password': 'adminpass123',
+            'password2': 'adminpass123',
+            'consent_to_data_processing': True
+        }
+        self.client.post(self.register_url, admin_data, format='json')
+        admin = CustomUser.objects.get(email='admin9@example.com')
+        admin.is_verified = True
+        admin.role = 'admin_org'
+        admin.organization = self.org
+        admin.save()
+
+        # Создаём первый корпус
+        Building.objects.create(
+            organization=self.org,
+            name='Building 1',
+            address='Test Address 1',
+            phone='+1234567890',
+            email='building1@example.com'
+        )
+
+        # Логинимся перед запросом
+        self.client.credentials()  # Сбрасываем заголовки
+        self.login_user('admin9@example.com', 'adminpass123')
+
+        # Пытаемся создать корпус с тем же именем
+        duplicate_data = {
+            'name': 'Building 1',
+            'address': 'Test Address 2',
+            'phone': '+1234567891',
+            'email': 'building2@example.com'
+        }
+        response = self.client.post(self.buildings_url, duplicate_data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn('error', response.data)
