@@ -1,7 +1,10 @@
+# applicant/urls.py
+from django.contrib import admin
 from django.urls import path, include
-from auth_app.views import ApplicantProfileView
 
 urlpatterns = [
+    path('admin/', admin.site.urls),
     path('api/auth/', include('auth_app.urls')),
-    path('api/profile/', ApplicantProfileView.as_view(), name='applicant_profile'),
+    path('api/users/', include('users.urls')),
+    path('api/org/', include('org.urls')),
 ]
