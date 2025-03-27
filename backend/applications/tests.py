@@ -13,6 +13,8 @@ class ApplicationTestCase(APITestCase):
         self.login_url = reverse('login')
         self.applications_url = reverse('applications')
         self.available_specialties_url = reverse('available_specialties')
+        self.moderator_applications_url = reverse('moderator_applications')
+        self.moderator_application_detail_url = reverse('moderator_application_detail')
 
         self.org = Organization.objects.create(
             name='Test Org',
@@ -134,3 +136,133 @@ class ApplicationTestCase(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data), 1)
         self.assertEqual(response.data[0]['code'], '09.02.07')
+
+    def test_moderator_get_applications(self):
+        """
+        Тест получения списка заявок модератором.
+        """
+        moderator_data = {
+            'email': 'moderator@example.com',
+            'password': 'modpass123',
+            'password2': 'modpass123',
+            'consent_to_data_processing': True
+        }
+        self.client.post(self.register_url, moderator_data, format='json')
+        moderator = CustomUser.objects.get(email='moderator@example.com')
+        moderator.is_verified = True
+        moderator.role = 'moderator'
+        moderator.organization = self.org
+        moderator.save()
+
+        applicant_data = {
+            'email': 'applicant@example.com',
+            'password': 'apppass123',
+            'password2': 'apppass123',
+            'consent_to_data_processing': True
+        }
+        self.client.post(self.register_url, applicant_data, format='json')
+        applicant = CustomUser.objects.get(email='applicant@example.com')
+        applicant.is_verified = True
+        applicant.role = 'applicant'
+        applicant.save()
+
+        Application.objects.create(
+            applicant=applicant,
+            building_specialty=self.building_specialty,
+            priority=1
+        )
+
+        self.client.credentials()
+        self.login_user('moderator@example.com', 'modpass123')
+
+        response = self.client.get(self.moderator_applications_url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 1)
+
+    def test_moderator_get_application_detail(self):
+        """
+        Тест получения одной заявки модератором.
+        """
+        moderator_data = {
+            'email': 'moderator2@example.com',
+            'password': 'modpass123',
+            'password2': 'modpass123',
+            'consent_to_data_processing': True
+        }
+        self.client.post(self.register_url, moderator_data, format='json')
+        moderator = CustomUser.objects.get(email='moderator2@example.com')
+        moderator.is_verified = True
+        moderator.role = 'moderator'
+        moderator.organization = self.org
+        moderator.save()
+
+        applicant_data = {
+            'email': 'applicant2@example.com',
+            'password': 'apppass123',
+            'password2': 'apppass123',
+            'consent_to_data_processing': True
+        }
+        self.client.post(self.register_url, applicant_data, format='json')
+        applicant = CustomUser.objects.get(email='applicant2@example.com')
+        applicant.is_verified = True
+        applicant.role = 'applicant'
+        applicant.save()
+
+        application = Application.objects.create(
+            applicant=applicant,
+            building_specialty=self.building_specialty,
+            priority=1
+        )
+
+        self.client.credentials()
+        self.login_user('moderator2@example.com', 'modpass123')
+
+        response = self.client.get(f"{self.moderator_application_detail_url}?id={application.id}")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['id'], application.id)
+
+    def test_moderator_accept_application(self):
+        """
+        Тест принятия заявки модератором.
+        """
+        moderator_data = {
+            'email': 'moderator3@example.com',
+            'password': 'modpass123',
+            'password2': 'modpass123',
+            'consent_to_data_processing': True
+        }
+        self.client.post(self.register_url, moderator_data, format='json')
+        moderator = CustomUser.objects.get(email='moderator3@example.com')
+        moderator.is_verified = True
+        moderator.role = 'moderator'
+        moderator.organization = self.org
+        moderator.save()
+
+        applicant_data = {
+            'email': 'applicant3@example.com',
+            'password': 'apppass123',
+            'password2': 'apppass123',
+            'consent_to_data_processing': True
+        }
+        self.client.post(self.register_url, applicant_data, format='json')
+        applicant = CustomUser.objects.get(email='applicant3@example.com')
+        applicant.is_verified = True
+        applicant.role = 'applicant'
+        applicant.save()
+
+        application = Application.objects.create(
+            applicant=applicant,
+            building_specialty=self.building_specialty,
+            priority=1
+        )
+
+        self.client.credentials()
+        self.login_user('moderator3@example.com', 'modpass123')
+
+        response = self.client.patch(self.moderator_application_detail_url, {
+            'id': application.id,
+            'action': 'accept'
+        }, format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        application.refresh_from_db()
+        self.assertEqual(application.status, 'accepted')

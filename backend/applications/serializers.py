@@ -1,9 +1,10 @@
 # applications/serializers.py
 from rest_framework import serializers
 from .models import Application
-from org.models import BuildingSpecialty  # Добавляем импорт модели
+from org.models import BuildingSpecialty
 from org.serializers import BuildingSpecialtySerializer
-
+from users.models import ApplicantProfile
+from users.serializers import ApplicantProfileSerializer
 
 class ApplicationSerializer(serializers.ModelSerializer):
     """
@@ -16,11 +17,12 @@ class ApplicationSerializer(serializers.ModelSerializer):
         write_only=True,
         required=True
     )
+    applicant_profile = serializers.SerializerMethodField()  # Добавляем данные профиля абитуриента
 
     class Meta:
         model = Application
         fields = [
-            'id', 'applicant', 'building_specialty', 'building_specialty_id',
+            'id', 'applicant', 'applicant_profile', 'building_specialty', 'building_specialty_id',
             'priority', 'course', 'study_form', 'funding_basis',
             'dormitory_needed', 'first_time_education', 'info_source',
             'status', 'created_at', 'updated_at'
@@ -29,6 +31,16 @@ class ApplicationSerializer(serializers.ModelSerializer):
             'applicant': {'read_only': True},
             'status': {'read_only': True}
         }
+
+    def get_applicant_profile(self, obj):
+        """
+        Получение профиля абитуриента.
+        """
+        try:
+            profile = ApplicantProfile.objects.get(user=obj.applicant)
+            return ApplicantProfileSerializer(profile).data
+        except ApplicantProfile.DoesNotExist:
+            return None
 
     def validate(self, data):
         """
