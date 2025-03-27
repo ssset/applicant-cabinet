@@ -3,13 +3,17 @@ from rest_framework.test import APITestCase
 from rest_framework import status
 from django.urls import reverse
 from users.models import CustomUser
-from .models import Organization, Building
+from .models import Organization, Building, Specialty, BuildingSpecialty
+
+
 
 class OrgTestCase(APITestCase):
     def setUp(self):
         self.register_url = reverse('register')
         self.login_url = reverse('login')
         self.buildings_url = reverse('buildings')
+        self.specialties_url = reverse('specialties')
+        self.building_specialties_url = reverse('building_specialties')
         self.org = Organization.objects.create(name='Test Org', email='org@example.com', phone='+1234567890',
                                                address='Test Address')
 
@@ -176,3 +180,108 @@ class OrgTestCase(APITestCase):
         response = self.client.post(self.buildings_url, duplicate_data, format='json')
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertIn('error', response.data)
+
+    def test_create_specialty(self):
+        """
+        Тест создания специальности модератором.
+        """
+        moderator_data = {
+            'email': 'moderator@example.com',
+            'password': 'modpass123',
+            'password2': 'modpass123',
+            'consent_to_data_processing': True
+        }
+        self.client.post(self.register_url, moderator_data, format='json')
+        moderator = CustomUser.objects.get(email='moderator@example.com')
+        moderator.is_verified = True
+        moderator.role = 'moderator'
+        moderator.organization = self.org
+        moderator.save()
+
+        self.client.credentials()
+        self.login_user('moderator@example.com', 'modpass123')
+
+        specialty_data = {
+            'code': '09.02.07',
+            'name': 'Информационные системы и программирование'
+        }
+        response = self.client.post(self.specialties_url, specialty_data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response.data['code'], '09.02.07')
+        self.assertEqual(Specialty.objects.count(), 1)
+
+    def test_get_specialties(self):
+        """
+        Тест получения списка специальностей.
+        """
+        moderator_data = {
+            'email': 'moderator2@example.com',
+            'password': 'modpass123',
+            'password2': 'modpass123',
+            'consent_to_data_processing': True
+        }
+        self.client.post(self.register_url, moderator_data, format='json')
+        moderator = CustomUser.objects.get(email='moderator2@example.com')
+        moderator.is_verified = True
+        moderator.role = 'moderator'
+        moderator.organization = self.org
+        moderator.save()
+
+        Specialty.objects.create(
+            organization=self.org,
+            code='09.02.07',
+            name='Информационные системы и программирование'
+        )
+
+        self.client.credentials()
+        self.login_user('moderator2@example.com', 'modpass123')
+
+        response = self.client.get(self.specialties_url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 1)
+        self.assertEqual(response.data[0]['code'], '09.02.07')
+
+    def test_assign_specialty_to_building(self):
+        """
+        Тест привязки специальности к корпусу.
+        """
+        moderator_data = {
+            'email': 'moderator3@example.com',
+            'password': 'modpass123',
+            'password2': 'modpass123',
+            'consent_to_data_processing': True
+        }
+        self.client.post(self.register_url, moderator_data, format='json')
+        moderator = CustomUser.objects.get(email='moderator3@example.com')
+        moderator.is_verified = True
+        moderator.role = 'moderator'
+        moderator.organization = self.org
+        moderator.save()
+
+        building = Building.objects.create(
+            organization=self.org,
+            name='Building 1',
+            address='Test Address 1',
+            phone='+1234567890',
+            email='building1@example.com'
+        )
+        specialty = Specialty.objects.create(
+            organization=self.org,
+            code='09.02.07',
+            name='Информационные системы и программирование'
+        )
+
+        self.client.credentials()
+        self.login_user('moderator3@example.com', 'modpass123')
+
+        building_specialty_data = {
+            'building': building.id,
+            'specialty': specialty.id,
+            'budget_places': 30,
+            'commercial_places': 20,
+            'commercial_price': '150000.00'
+        }
+        response = self.client.post(self.building_specialties_url, building_specialty_data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response.data['budget_places'], 30)
+        self.assertEqual(BuildingSpecialty.objects.count(), 1)

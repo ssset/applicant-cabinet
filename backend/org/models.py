@@ -53,3 +53,57 @@ class Building(models.Model):
 
     def __str__(self):
         return f'{self.name} ({self.organization.name})'
+
+class Specialty(models.Model):
+    """
+    Модель для хранения данных о специальностях.
+    """
+    organization = models.ForeignKey(Organization,
+                                     on_delete=models.CASCADE,
+                                     related_name='specialties',
+                                     verbose_name='Организация')
+    code = models.CharField(max_length=20,
+                            verbose_name='Код специальности',
+                            help_text='Код специальности (например, 09.02.07)')
+    name = models.CharField(max_length=200,
+                            verbose_name='Название специальности',
+                            help_text='Название специальности (например, Информационные системы и программирование)')
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name='Дата создания')
+    updated_at = models.DateTimeField(auto_now=True, verbose_name='Дата обновления')
+
+    class Meta:
+        verbose_name = 'Специальность'
+        verbose_name_plural = 'Специальности'
+        unique_together = ['organization', 'code']
+
+    def __str__(self):
+        return f'{self.code} - {self.name} ({self.organization.name})'
+
+class BuildingSpecialty(models.Model):
+    """
+    Модель для связи специальности с корпусом, с указанием мест и цены.
+    """
+    building = models.ForeignKey(Building,
+                                 on_delete=models.CASCADE,
+                                 related_name='building_specialties',
+                                 verbose_name='Корпус')
+    specialty = models.ForeignKey(Specialty,
+                                  on_delete=models.CASCADE,
+                                  related_name='building_specialties',
+                                  verbose_name='Специальность')
+    budget_places = models.PositiveIntegerField(default=0,
+                                                verbose_name='Количество бюджетных мест')
+    commercial_places = models.PositiveIntegerField(default=0,
+                                                    verbose_name='Количество коммерческих мест')
+    commercial_price = models.DecimalField(max_digits=10,
+                                           decimal_places=2,
+                                           verbose_name='Цена за обучение (коммерция)',
+                                           help_text='Цена за обучение на коммерческой основе')
+
+    class Meta:
+        verbose_name = 'Специальность в корпусе'
+        verbose_name_plural = 'Специальности в корпусах'
+        unique_together = ['building', 'specialty']
+
+    def __str__(self):
+        return f'{self.specialty.name} в {self.building.name}'
