@@ -69,3 +69,35 @@ class ApplicationSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         validated_data['applicant'] = self.context['request'].user
         return super().create(validated_data)
+
+
+class LeaderboardSerializer(serializers.ModelSerializer):
+    """
+    Сериализатор для лидерборда по специальности.
+    """
+    applicant_email = serializers.EmailField(source='applicant.email', read_only=True)
+    applicant_profile = serializers.SerializerMethodField()
+    building_specialty = BuildingSpecialtySerializer(read_only=True)
+    rank = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Application
+        fields = [
+            'id', 'applicant', 'applicant_email', 'applicant_profile',
+            'building_specialty', 'priority', 'status', 'created_at', 'rank'
+        ]
+
+    def get_applicant_profile(self, obj):
+        try:
+            profile = ApplicantProfile.objects.get(user=obj.applicant)
+            return ApplicantProfileSerializer(profile).data
+        except ApplicantProfile.DoesNotExist:
+            return None
+
+    def get_rank(self, obj):
+        """
+        Возвращает место заявки в лидерборде (заполняется в view).
+        """
+        return getattr(obj, 'rank', None)
+
+

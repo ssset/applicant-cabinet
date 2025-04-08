@@ -9,7 +9,7 @@ from auth_app.permissions import IsEmailVerified, IsApplicant, IsModerator
 from org.models import Specialty, BuildingSpecialty
 from org.serializers import SpecialtySerializer, BuildingSpecialtySerializer
 from .models import Application
-from .serializers import ApplicationSerializer
+from .serializers import ApplicationSerializer, LeaderboardSerializer
 
 logger = logging.getLogger(__name__)
 
@@ -231,3 +231,68 @@ class ModeratorApplicationDetailView(APIView):
         except Exception as e:
             logger.error(f"Unexpected error in ModeratorApplicationDetailView PATCH: {str(e)}")
             return Response({'error': 'Internal server error'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class LeaderboardView(APIView):
+    """
+    API для получения лидерборда по специальности.
+    Доступно только для абитуриентов.
+    """
+    permission_classes = [IsAuthenticated, IsEmailVerified, IsApplicant]
+
+    def get(self, request):
+        """
+        Получение лидерборда для конкретной специальности.
+        Параметры:
+        - building_specialty_id: ID специальности в корпусе (обязательный).
+        """
+        try:
+            building_specialty_id = request.query_params.get('building_specialty_id')
+            if not building_specialty_id:
+                raise ValidationError("Building specialty ID is required")
+
+            # Проверяем, существует ли building_specialty
+            try:
+                building_specialty = BuildingSpecialty.objects.get(id=building_specialty_id)
+            except BuildingSpecialty.DoesNotExist:
+                logger.warning(f"BuildingSpecialty {building_specialty_id} not found")
+                return Response({'error': 'Building specialty not found'}, status=status.HTTP_404_NOT_FOUND)
+
+            # Получаем все заявки для этой специальности
+            applications = Application.objects.filter(
+                building_specialty=building_specialty
+            ).order_by(
+                # Сортировка: сначала по статусу (accepted -> pending -> rejected),
+                # затем по приоритету, затем по дате подачи
+                '-status', 'priority', 'created_at'
+            )
+
+            # Добавляем rank (место в рейтинге)
+            ranked_applications = []
+            for rank, application in enumerate(applications, start=1):
+                application.rank = rank
+                ranked_applications.append(application)
+
+            serializer = LeaderboardSerializer(ranked_applications, many=True)
+            logger.info(f"Retrieved leaderboard for BuildingSpecialty {building_specialty_id}")
+            return Response({
+                'building_specialty': BuildingSpecialtySerializer(building_specialty).data,
+                'leaderboard': serializer.data,
+                'user_rank': self.get_user_rank(request.user, ranked_applications)
+            }, status=status.HTTP_200_OK)
+        except ValidationError as e:
+            logger.error(f"Validation error in LeaderboardView GET: {str(e)}")
+            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            logger.error(f"Unexpected error in LeaderboardView GET: {str(e)}")
+            return Response({'error': 'Internal server error'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    def get_user_rank(self, user, ranked_applications):
+        """
+        Возвращает место пользователя в лидерборде.
+        """
+        for application in ranked_applications:
+            if application.applicant == user:
+                return application.rank
+        return None
+

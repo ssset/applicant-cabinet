@@ -15,6 +15,7 @@ class ApplicationTestCase(APITestCase):
         self.available_specialties_url = reverse('available_specialties')
         self.moderator_applications_url = reverse('moderator_applications')
         self.moderator_application_detail_url = reverse('moderator_application_detail')
+        self.leaderboard_url = reverse('leaderboard')
 
         self.org = Organization.objects.create(
             name='Test Org',
@@ -266,3 +267,57 @@ class ApplicationTestCase(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         application.refresh_from_db()
         self.assertEqual(application.status, 'accepted')
+
+        def test_leaderboard(self):
+            """
+            Тест получения лидерборда по специальности.
+            """
+            applicant1_data = {
+                'email': 'applicant1@example.com',
+                'password': 'apppass123',
+                'password2': 'apppass123',
+                'consent_to_data_processing': True
+            }
+            self.client.post(self.register_url, applicant1_data, format='json')
+            applicant1 = CustomUser.objects.get(email='applicant1@example.com')
+            applicant1.is_verified = True
+            applicant1.role = 'applicant'
+            applicant1.save()
+
+            applicant2_data = {
+                'email': 'applicant2@example.com',
+                'password': 'apppass123',
+                'password2': 'apppass123',
+                'consent_to_data_processing': True
+            }
+            self.client.post(self.register_url, applicant2_data, format='json')
+            applicant2 = CustomUser.objects.get(email='applicant2@example.com')
+            applicant2.is_verified = True
+            applicant2.role = 'applicant'
+            applicant2.save()
+
+            # Создаём заявки
+            app1 = Application.objects.create(
+                applicant=applicant1,
+                building_specialty=self.building_specialty,
+                priority=1,
+                status='accepted'
+            )
+            app2 = Application.objects.create(
+                applicant=applicant2,
+                building_specialty=self.building_specialty,
+                priority=2,
+                status='pending'
+            )
+
+            self.client.credentials()
+            self.login_user('applicant2@example.com', 'apppass123')
+
+            response = self.client.get(f"{self.leaderboard_url}?building_specialty_id={self.building_specialty.id}")
+            self.assertEqual(response.status_code, status.HTTP_200_OK)
+            self.assertEqual(len(response.data['leaderboard']), 2)
+            self.assertEqual(response.data['leaderboard'][0]['applicant_email'], 'applicant1@example.com')
+            self.assertEqual(response.data['leaderboard'][0]['rank'], 1)
+            self.assertEqual(response.data['leaderboard'][1]['applicant_email'], 'applicant2@example.com')
+            self.assertEqual(response.data['leaderboard'][1]['rank'], 2)
+            self.assertEqual(response.data['user_rank'], 2)
