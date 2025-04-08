@@ -19,6 +19,7 @@ class Organization(models.Model):
     def __str__(self):
         return self.name
 
+
 class Building(models.Model):
     """
     Модель для хранения данных о корпусах учебного заведения.
@@ -54,6 +55,7 @@ class Building(models.Model):
     def __str__(self):
         return f'{self.name} ({self.organization.name})'
 
+
 class Specialty(models.Model):
     """
     Модель для хранения данных о специальностях.
@@ -78,6 +80,7 @@ class Specialty(models.Model):
 
     def __str__(self):
         return f'{self.code} - {self.name} ({self.organization.name})'
+
 
 class BuildingSpecialty(models.Model):
     """
