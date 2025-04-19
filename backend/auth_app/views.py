@@ -81,10 +81,9 @@ class LoginView(APIView):
             refresh = RefreshToken.for_user(user)
             response = Response({
                 'refresh': str(refresh),
-                'access': str(refresh.access_token)
+                'access': str(refresh.access_token),
+                'role': user.role  # Добавляем роль в тело ответа
             }, status=status.HTTP_200_OK)
-            response.set_cookie('refresh', str(refresh), httponly=True, secure=False)
-            response.set_cookie('access', str(refresh.access_token), httponly=True, secure=False)
             logger.info(f'User {user.email} logged in successfully')
             return response
 

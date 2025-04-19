@@ -72,6 +72,8 @@ class Specialty(models.Model):
                             help_text='Название специальности (например, Информационные системы и программирование)')
     created_at = models.DateTimeField(auto_now_add=True, verbose_name='Дата создания')
     updated_at = models.DateTimeField(auto_now=True, verbose_name='Дата обновления')
+    duration = models.CharField(max_length=50, blank=True, null=True, verbose_name='Срок обучения')  # Новое поле
+    requirements = models.TextField(blank=True, null=True, verbose_name='Вступительные экзамены')  # Новое поле
 
     class Meta:
         verbose_name = 'Специальность'

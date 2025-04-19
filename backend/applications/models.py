@@ -4,9 +4,6 @@ from org.models import BuildingSpecialty
 
 
 class Application(models.Model):
-    """
-    Модель для хранения заявок абитуриентов на поступление.
-    """
     applicant = models.ForeignKey(CustomUser,
                                   on_delete=models.CASCADE,
                                   related_name='applications',
@@ -52,6 +49,7 @@ class Application(models.Model):
                               ],
                               default='pending',
                               verbose_name='Статус заявки')
+    reject_reason = models.TextField(blank=True, null=True, verbose_name='Причина отклонения')  # Новое поле
     created_at = models.DateTimeField(auto_now_add=True, verbose_name='Дата создания')
     updated_at = models.DateTimeField(auto_now=True, verbose_name='Дата обновления')
 

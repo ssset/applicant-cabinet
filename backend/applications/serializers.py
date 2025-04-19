@@ -7,9 +7,6 @@ from users.models import ApplicantProfile
 from users.serializers import ApplicantProfileSerializer
 
 class ApplicationSerializer(serializers.ModelSerializer):
-    """
-    Сериализатор для управления заявками абитуриентов.
-    """
     building_specialty = BuildingSpecialtySerializer(read_only=True)
     building_specialty_id = serializers.PrimaryKeyRelatedField(
         queryset=BuildingSpecialty.objects.all(),
@@ -17,7 +14,7 @@ class ApplicationSerializer(serializers.ModelSerializer):
         write_only=True,
         required=True
     )
-    applicant_profile = serializers.SerializerMethodField()  # Добавляем данные профиля абитуриента
+    applicant_profile = serializers.SerializerMethodField()
 
     class Meta:
         model = Application
@@ -25,17 +22,15 @@ class ApplicationSerializer(serializers.ModelSerializer):
             'id', 'applicant', 'applicant_profile', 'building_specialty', 'building_specialty_id',
             'priority', 'course', 'study_form', 'funding_basis',
             'dormitory_needed', 'first_time_education', 'info_source',
-            'status', 'created_at', 'updated_at'
+            'status', 'reject_reason', 'created_at', 'updated_at'  # Добавляем reject_reason
         ]
         extra_kwargs = {
             'applicant': {'read_only': True},
-            'status': {'read_only': True}
+            'status': {'read_only': True},
+            'reject_reason': {'read_only': True}  # Делаем поле только для чтения
         }
 
     def get_applicant_profile(self, obj):
-        """
-        Получение профиля абитуриента.
-        """
         try:
             profile = ApplicantProfile.objects.get(user=obj.applicant)
             return ApplicantProfileSerializer(profile).data
@@ -43,22 +38,16 @@ class ApplicationSerializer(serializers.ModelSerializer):
             return None
 
     def validate(self, data):
-        """
-        Проверка логики заявки.
-        """
         applicant = self.context['request'].user
         building_specialty = data.get('building_specialty')
 
-        # Проверяем, что пользователь - абитуриент
         if applicant.role != 'applicant':
             raise serializers.ValidationError('Only applicants can submit applications.')
 
-        # Проверяем, не подал ли абитуриент заявку на эту специальность ранее
-        if self.instance is None:  # Создание новой заявки
+        if self.instance is None:
             if Application.objects.filter(applicant=applicant, building_specialty=building_specialty).exists():
                 raise serializers.ValidationError('You have already applied to this specialty in this building.')
 
-        # Проверяем доступные места
         if data.get('funding_basis') == 'budget' and building_specialty.budget_places <= 0:
             raise serializers.ValidationError('No budget places available for this specialty.')
         if data.get('funding_basis') == 'commercial' and building_specialty.commercial_places <= 0:

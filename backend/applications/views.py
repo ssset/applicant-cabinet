@@ -5,9 +5,10 @@ from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import IsAuthenticated
-from auth_app.permissions import IsEmailVerified, IsApplicant, IsModerator
-from org.models import Specialty, BuildingSpecialty
+from auth_app.permissions import IsEmailVerified, IsApplicant, IsModerator, IsAdminOrg
+from org.models import Specialty, BuildingSpecialty, Organization
 from org.serializers import SpecialtySerializer, BuildingSpecialtySerializer
+from org.serializers import OrganizationSerializer
 from .models import Application
 from .serializers import ApplicationSerializer, LeaderboardSerializer
 
@@ -69,9 +70,15 @@ class AvailableSpecialtiesView(APIView):
     def get(self, request):
         try:
             specialty_id = request.query_params.get('id')
+            organization_id = request.query_params.get('organization_id')  # Добавляем параметр
+
+            specialties = Specialty.objects.all()
+            if organization_id:
+                specialties = specialties.filter(organization_id=organization_id)
+
             if specialty_id:
                 try:
-                    specialty = Specialty.objects.get(id=specialty_id)
+                    specialty = specialties.get(id=specialty_id)
                     serializer = SpecialtySerializer(specialty)
                     logger.info(f"Retrieved specialty {specialty_id} for {request.user.email}")
                     return Response(serializer.data, status=status.HTTP_200_OK)
@@ -79,7 +86,6 @@ class AvailableSpecialtiesView(APIView):
                     logger.warning(f"Specialty {specialty_id} not found")
                     return Response({'error': 'Specialty not found'}, status=status.HTTP_404_NOT_FOUND)
 
-            specialties = Specialty.objects.all()
             serializer = SpecialtySerializer(specialties, many=True)
             logger.info(f"Retrieved {len(specialties)} specialties for {request.user.email}")
             return Response(serializer.data, status=status.HTTP_200_OK)
@@ -87,12 +93,27 @@ class AvailableSpecialtiesView(APIView):
             logger.error(f"Error retrieving specialties: {str(e)}")
             return Response({'error': 'Internal server error'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+
+class AvailableOrganizationsView(APIView):
+    permission_classes = [IsAuthenticated, IsEmailVerified, IsApplicant]
+
+    def get(self, request):
+        try:
+            organizations = Organization.objects.all()
+            serializer = OrganizationSerializer(organizations, many=True)
+            logger.info(f"Retrieved {len(organizations)} organizations for {request.user.email}")
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        except Exception as e:
+            logger.error(f"Error retrieving organizations: {str(e)}")
+            return Response({'error': 'Internal server error'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
 # Новые вьюхи для модераторов
 class ModeratorApplicationsView(APIView):
     """
     API для модераторов: получение списка всех заявок в их организации.
     """
-    permission_classes = [IsAuthenticated, IsEmailVerified, IsModerator]
+    permission_classes = [IsAuthenticated, IsEmailVerified, IsModerator | IsAdminOrg]
 
     def get(self, request):
         """
@@ -113,28 +134,35 @@ class ModeratorApplicationsView(APIView):
             logger.error(f"Error retrieving applications: {str(e)}")
             return Response({'error': 'Internal server error'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+# applications/views.py
+import logging
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework import status
+from rest_framework.exceptions import ValidationError
+from rest_framework.permissions import IsAuthenticated
+from auth_app.permissions import IsEmailVerified, IsApplicant, IsModerator, IsAdminOrg
+from org.models import Specialty, BuildingSpecialty
+from org.serializers import SpecialtySerializer, BuildingSpecialtySerializer
+from .models import Application
+from .serializers import ApplicationSerializer, LeaderboardSerializer
+
+logger = logging.getLogger(__name__)
+
+# ... (предыдущие вьюхи без изменений) ...
+
 class ModeratorApplicationDetailView(APIView):
-    """
-    API для модераторов: работа с одной заявкой (просмотр, переключение, принятие/отклонение).
-    """
-    permission_classes = [IsAuthenticated, IsEmailVerified, IsModerator]
+    permission_classes = [IsAuthenticated, IsEmailVerified, IsModerator | IsAdminOrg]
 
     def get(self, request):
-        """
-        Получение данных по одной заявке с возможностью переключения.
-        Параметры:
-        - id: ID заявки.
-        - direction (опционально): 'next' или 'prev' для переключения между заявками.
-        """
         try:
             if not request.user.organization:
                 logger.error(f"User {request.user.email} has no organization assigned")
                 return Response({'error': 'User has no organization assigned'}, status=status.HTTP_400_BAD_REQUEST)
 
             application_id = request.query_params.get('id')
-            direction = request.query_params.get('direction')  # 'next' или 'prev'
+            direction = request.query_params.get('direction')
 
-            # Получаем все заявки в организации, отсортированные по ID
             applications = Application.objects.filter(
                 building_specialty__building__organization=request.user.organization
             ).order_by('id')
@@ -142,7 +170,6 @@ class ModeratorApplicationDetailView(APIView):
             if not applications.exists():
                 return Response({'error': 'No applications found'}, status=status.HTTP_404_NOT_FOUND)
 
-            # Если передан direction, переключаемся на следующую/предыдущую заявку
             if direction:
                 if not application_id:
                     raise ValidationError("Application ID is required for navigation")
@@ -152,11 +179,9 @@ class ModeratorApplicationDetailView(APIView):
                     logger.warning(f"Application {application_id} not found")
                     return Response({'error': 'Application not found'}, status=status.HTTP_404_NOT_FOUND)
 
-                # Находим индекс текущей заявки
                 application_ids = list(applications.values_list('id', flat=True))
                 current_index = application_ids.index(int(application_id))
 
-                # Определяем ID следующей или предыдущей заявки
                 if direction == 'next':
                     next_index = current_index + 1 if current_index + 1 < len(application_ids) else 0
                     application = applications[next_index]
@@ -166,9 +191,7 @@ class ModeratorApplicationDetailView(APIView):
                 else:
                     raise ValidationError("Direction must be 'next' or 'prev'")
             else:
-                # Если direction не передан, просто возвращаем заявку по ID
                 if not application_id:
-                    # Если ID не передан, возвращаем первую заявку
                     application = applications.first()
                 else:
                     try:
@@ -188,12 +211,6 @@ class ModeratorApplicationDetailView(APIView):
             return Response({'error': 'Internal server error'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     def patch(self, request):
-        """
-        Принятие или отклонение заявки.
-        Ожидаемые данные:
-        - id: ID заявки.
-        - action: 'accept' или 'reject'.
-        """
         try:
             if not request.user.organization:
                 logger.error(f"User {request.user.email} has no organization assigned")
@@ -201,11 +218,14 @@ class ModeratorApplicationDetailView(APIView):
 
             application_id = request.data.get('id')
             action = request.data.get('action')
+            reject_reason = request.data.get('reject_reason')  # Получаем причину отклонения
 
             if not application_id:
                 raise ValidationError("Application ID is required")
             if not action:
                 raise ValidationError("Action is required")
+            if action == 'reject' and not reject_reason:
+                raise ValidationError("Reject reason is required when rejecting an application")
 
             application = Application.objects.get(
                 id=application_id,
@@ -214,13 +234,15 @@ class ModeratorApplicationDetailView(APIView):
 
             if action == 'accept':
                 application.status = 'accepted'
+                application.reject_reason = None  # Очищаем причину, если заявка принимается
             elif action == 'reject':
                 application.status = 'rejected'
+                application.reject_reason = reject_reason
             else:
                 raise ValidationError("Action must be 'accept' or 'reject'")
 
             application.save()
-            logger.info(f"Application {application.id} {action}ed by {request.user.email}")
+            logger.info(f"Application {application.id} {action}ed by {request.user.email} with reason: {reject_reason}")
             return Response({'message': f'Application {action}ed'}, status=status.HTTP_200_OK)
         except Application.DoesNotExist:
             logger.warning(f"Application {application_id} not found")

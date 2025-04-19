@@ -15,22 +15,32 @@ logger = logging.getLogger(__name__)
 
 
 class OrganizationView(APIView):
-    """
-    API для управления организациями (доступно только для admin_app)
-    """
-    permission_classes = [IsAuthenticated, IsEmailVerified, IsAdminApp]
+    permission_classes = [IsAuthenticated, IsEmailVerified, IsAdminApp | IsAdminOrg]
 
     def get(self, request):
-        organizations = Organization.objects.all()
-        serializer = OrganizationSerializer(organizations, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        try:
+            if request.user.role == 'admin_app':
+                organizations = Organization.objects.all()
+                logger.info(f"AdminApp {request.user.email} retrieved all organizations with buildings")
+            elif request.user.role == 'admin_org' and request.user.organization:
+                organizations = Organization.objects.filter(id=request.user.organization.id)
+                logger.info(f"AdminOrg {request.user.email} retrieved organization {request.user.organization.name}")
+            else:
+                logger.error(f"User {request.user.email} has no organization assigned or insufficient permissions")
+                return Response({'error': 'User has no organization assigned or insufficient permissions'},
+                                status=status.HTTP_400_BAD_REQUEST)
+
+            serializer = OrganizationSerializer(organizations, many=True, context={'request': request})
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        except Exception as e:
+            logger.error(f"Error retrieving organizations: {str(e)}")
+            return Response({'error': 'Internal server error'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     def post(self, request):
         serializer = OrganizationSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
-
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     def patch(self, request):
@@ -40,9 +50,7 @@ class OrganizationView(APIView):
             if serializer.is_valid():
                 serializer.save()
                 return Response(serializer.data, status=status.HTTP_200_OK)
-
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
         except Organization.DoesNotExist:
             return Response({'message': 'Organization not found'}, status=status.HTTP_404_NOT_FOUND)
 
@@ -51,25 +59,28 @@ class OrganizationView(APIView):
             organization = Organization.objects.get(id=request.query_params.get('id'))
             organization.delete()
             return Response({'message': 'Organization deleted'}, status=status.HTTP_204_NO_CONTENT)
-
         except Organization.DoesNotExist:
             return Response({'message': 'Organization not found'}, status=status.HTTP_404_NOT_FOUND)
 
+
+# BuildingView остается без изменений, но добавим его для полноты
 class BuildingView(APIView):
-    """
-    API для управления корпусами (доступно только для admin_org).
-    Поддерживает CRUD операции с отправкой уведомления на email при создании.
-    """
-    permission_classes = [IsAuthenticated, IsEmailVerified, IsAdminOrg]
+    permission_classes = [IsAuthenticated, IsEmailVerified, IsAdminOrg | IsAdminApp]
 
     def get(self, request):
         try:
-            if not request.user.organization:
-                logger.error(f"User {request.user.email} has no organization assigned")
-                return Response({'error': 'User has no organization assigned'}, status=status.HTTP_400_BAD_REQUEST)
-            buildings = Building.objects.filter(organization=request.user.organization)
+            if request.user.role == 'admin_app':
+                buildings = Building.objects.all()
+                logger.info(f"AdminApp {request.user.email} retrieved all buildings")
+            elif request.user.organization:
+                buildings = Building.objects.filter(organization=request.user.organization)
+                logger.info(f"Retrieved {len(buildings)} buildings for organization {request.user.organization.name}")
+            else:
+                logger.error(f"User {request.user.email} has no organization assigned and is not admin_app")
+                return Response({'error': 'User has no organization assigned or insufficient permissions'},
+                                status=status.HTTP_400_BAD_REQUEST)
+
             serializer = BuildingSerializer(buildings, many=True)
-            logger.info(f"Retrieved {len(buildings)} buildings for organization {request.user.organization.name}")
             return Response(serializer.data, status=status.HTTP_200_OK)
         except Exception as e:
             logger.error(f"Error retrieving buildings: {str(e)}")
@@ -77,19 +88,13 @@ class BuildingView(APIView):
 
     def post(self, request):
         try:
-            if not request.user.organization:
-                logger.error(f"User {request.user.email} has no organization assigned")
-                return Response({'error': 'User has no organization assigned'}, status=status.HTTP_400_BAD_REQUEST)
-
-            data = request.data.copy()
-            data['organization'] = request.user.organization.id
-            serializer = BuildingSerializer(data=data)
+            logger.debug(f"BuildingView POST request data: {request.data}")  # Добавлено для отладки
+            serializer = BuildingSerializer(data=request.data)
             serializer.is_valid(raise_exception=True)
             building = serializer.save()
 
-            # Отправка уведомления
             subject = "New Building Created"
-            message = f"Building {building.name} created for {request.user.organization.name}. ID: {building.id}"
+            message = f"Building {building.name} created for {building.organization.name}. ID: {building.id}"
             try:
                 send_mail(
                     subject=subject,
@@ -101,8 +106,6 @@ class BuildingView(APIView):
                 logger.info(f"Email notification sent to {request.user.email} for building {building.name}")
             except Exception as e:
                 logger.error(f"Failed to send email notification: {str(e)}")
-                # Не прерываем выполнение, если email не отправился
-                pass
 
             logger.info(f"Building {building.name} created by {request.user.email}")
             return Response(serializer.data, status=status.HTTP_201_CREATED)
@@ -115,21 +118,26 @@ class BuildingView(APIView):
 
     def patch(self, request):
         try:
-            if not request.user.organization:
-                logger.error(f"User {request.user.email} has no organization assigned")
-                return Response({'error': 'User has no organization assigned'}, status=status.HTTP_400_BAD_REQUEST)
-
             building_id = request.data.get('id')
             if not building_id:
                 raise ValidationError("Building ID is required")
-            building = Building.objects.get(id=building_id, organization=request.user.organization)
+
+            if request.user.role == 'admin_app':
+                building = Building.objects.get(id=building_id)
+            elif request.user.organization:
+                building = Building.objects.get(id=building_id, organization=request.user.organization)
+            else:
+                logger.error(f"User {request.user.email} has no organization assigned and is not admin_app")
+                return Response({'error': 'User has no organization assigned or insufficient permissions'},
+                                status=status.HTTP_400_BAD_REQUEST)
+
             serializer = BuildingSerializer(building, data=request.data, partial=True)
             serializer.is_valid(raise_exception=True)
             serializer.save()
             logger.info(f"Building {building_id} updated by {request.user.email}")
             return Response(serializer.data, status=status.HTTP_200_OK)
         except Building.DoesNotExist:
-            logger.warning(f"Building {building_id} not found for {request.user.organization.name}")
+            logger.warning(f"Building {building_id} not found")
             return Response({'error': 'Building not found'}, status=status.HTTP_404_NOT_FOUND)
         except ValidationError as e:
             logger.error(f"Validation error in BuildingView PATCH: {str(e)}")
@@ -140,19 +148,24 @@ class BuildingView(APIView):
 
     def delete(self, request):
         try:
-            if not request.user.organization:
-                logger.error(f"User {request.user.email} has no organization assigned")
-                return Response({'error': 'User has no organization assigned'}, status=status.HTTP_400_BAD_REQUEST)
-
             building_id = request.query_params.get('id')
             if not building_id:
                 raise ValidationError("Building ID is required")
-            building = Building.objects.get(id=building_id, organization=request.user.organization)
+
+            if request.user.role == 'admin_app':
+                building = Building.objects.get(id=building_id)
+            elif request.user.organization:
+                building = Building.objects.get(id=building_id, organization=request.user.organization)
+            else:
+                logger.error(f"User {request.user.email} has no organization assigned and is not admin_app")
+                return Response({'error': 'User has no organization assigned or insufficient permissions'},
+                                status=status.HTTP_400_BAD_REQUEST)
+
             building.delete()
             logger.info(f"Building {building_id} deleted by {request.user.email}")
             return Response({'message': 'Building deleted'}, status=status.HTTP_204_NO_CONTENT)
         except Building.DoesNotExist:
-            logger.warning(f"Building {building_id} not found for {request.user.organization.name}")
+            logger.warning(f"Building {building_id} not found")
             return Response({'error': 'Building not found'}, status=status.HTTP_404_NOT_FOUND)
         except ValidationError as e:
             logger.error(f"Validation error in BuildingView DELETE: {str(e)}")
@@ -166,7 +179,7 @@ class SpecialtyView(APIView):
     """
     API для управления специальностями (доступно только для модераторов).
     """
-    permission_classes = [IsAuthenticated, IsEmailVerified, IsModerator]
+    permission_classes = [IsAuthenticated, IsEmailVerified, IsModerator | IsAdminOrg]
 
     def get(self, request):
         """
@@ -189,13 +202,24 @@ class SpecialtyView(APIView):
         Создание новой специальности.
         """
         try:
-            if not request.user.organization:
-                logger.error(f"User {request.user.email} has no organization assigned")
+            # Проверяем, аутентифицирован ли пользователь
+            if not request.user.is_authenticated:
+                logger.error("User is not authenticated")
+                return Response({'error': 'Authentication required'}, status=status.HTTP_401_UNAUTHORIZED)
+
+            # Проверяем наличие организации у пользователя
+            if not hasattr(request.user, 'organization') or not request.user.organization:
+                logger.error(
+                    f"User {request.user.email if hasattr(request.user, 'email') else 'unknown'} has no organization assigned")
                 return Response({'error': 'User has no organization assigned'}, status=status.HTTP_400_BAD_REQUEST)
 
+            logger.info(f"Request data: {request.data}")
             data = request.data.copy()
-            data['organization'] = request.user.organization.id
-            serializer = SpecialtySerializer(data=data)
+            # Переименовываем organization в organization_id для сериализатора
+            if 'organization' in data:
+                data['organization_id'] = data.pop('organization')
+
+            serializer = SpecialtySerializer(data=data)  # Убираем context
             serializer.is_valid(raise_exception=True)
             specialty = serializer.save()
             logger.info(f"Specialty {specialty.code} - {specialty.name} created by {request.user.email}")
@@ -266,7 +290,7 @@ class BuildingSpecialtyView(APIView):
     """
     API для привязки специальностей к корпусам (доступно только для модераторов).
     """
-    permission_classes = [IsAuthenticated, IsEmailVerified, IsModerator]
+    permission_classes = [IsAuthenticated, IsEmailVerified, IsAdminOrg ]
 
     def post(self, request):
         """

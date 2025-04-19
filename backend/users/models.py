@@ -15,7 +15,7 @@ class CustomUserManager(BaseUserManager):
         user.set_password(password)
         user.role = role or 'applicant'
         user.verification_code = str(uuid.uuid4())[:8]
-        user.consent_to_data_processing = consent_to_data_processing
+        user.consent_to_data_processing = consent_to_data_processing if consent_to_data_processing is not None else True
         if organization:
             user.organization = organization
         user.save(using=self._db)
@@ -25,6 +25,7 @@ class CustomUserManager(BaseUserManager):
         extra_fields.setdefault('is_staff', True)
         extra_fields.setdefault('is_superuser', True)
         return self.create_user(email, password, **extra_fields)
+
 
 class CustomUser(AbstractUser):
     """
@@ -40,7 +41,7 @@ class CustomUser(AbstractUser):
     role = models.CharField(max_length=20, choices=ROLES, default='applicant', verbose_name='Role')
     is_verified = models.BooleanField(default=False, verbose_name='Email Verified')
     verification_code = models.CharField(max_length=8, blank=True, null=True, verbose_name='Verification Code')
-    consent_to_data_processing = models.BooleanField(default=False, verbose_name='Consent to Data Processing')
+    consent_to_data_processing = models.BooleanField(default=True, verbose_name='Consent to Data Processing',)
     organization = models.ForeignKey('org.Organization', on_delete=models.SET_NULL, null=True, blank=True,
                                      verbose_name='Organization')
 
@@ -92,6 +93,17 @@ class ApplicantProfile(models.Model):
     ])
     document_series = models.CharField(max_length=10, blank=True, verbose_name='Document Series')
     document_number = models.CharField(max_length=20, blank=True, verbose_name='Document Number')
+    # Средний балл (заполняется абитуриентом)
+    average_grade = models.DecimalField(
+        max_digits=3, decimal_places=1, blank=True, null=True,
+        verbose_name='Average Grade', help_text='Average grade (max 5.0)'
+    )
+    # Посчитанный средний балл (на основе OCR)
+    calculated_average_grade = models.DecimalField(
+        max_digits=3, decimal_places=1, blank=True, null=True,
+        verbose_name='Calculated Average Grade', editable=False,
+        help_text='Calculated average grade from attestation (read-only)'
+    )
     # Дополнительная информация
     foreign_languages = models.JSONField(blank=True, null=True, verbose_name='Foreign Languages')  # Список языков
     attestation_photo = models.ImageField(upload_to='attestations/', blank=True, null=True,
