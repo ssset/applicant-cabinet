@@ -16,7 +16,7 @@ ENV TESSDATA_PREFIX=/usr/share/tesseract-ocr/5/tessdata/
 WORKDIR /app
 
 # Копирование зависимостей
-COPY backend/requirements.txt .
+COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Копирование кода бэкенда

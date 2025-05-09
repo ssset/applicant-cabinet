@@ -1,0 +1,19 @@
+# Базовый образ Python
+FROM python:3.11-slim
+
+# Установка системных зависимостей
+RUN apt-get update && apt-get install -y \
+    && rm -rf /var/lib/apt/lists/*
+
+# Установка рабочей директории
+WORKDIR /app
+
+# Копирование зависимостей
+COPY backend/requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Копирование кода бэкенда
+COPY backend/ .
+
+# Команда для запуска Celery
+CMD ["celery", "-A", "applicant", "worker", "--loglevel=info"]
