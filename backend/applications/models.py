@@ -56,7 +56,6 @@ class Application(models.Model):
     class Meta:
         verbose_name = 'Заявка'
         verbose_name_plural = 'Заявки'
-        unique_together = ['applicant', 'building_specialty']
         ordering = ['priority']
 
     def __str__(self):

@@ -12,7 +12,7 @@ class CustomUserAdmin(UserAdmin):
     # Поля, которые будут отображаться при редактировании пользователя
     fieldsets = (
         (None, {'fields': ('email', 'password')}),
-        ('Personal info', {'fields': ('role', 'is_verified', 'verification_code', 'consent_to_data_processing', 'organization')}),
+        ('Personal info', {'fields': ('role', 'is_verified', 'consent_to_data_processing', 'organization')}),
         ('Permissions', {'fields': ('is_active', 'is_staff', 'is_superuser', 'groups', 'user_permissions')}),
     )
 

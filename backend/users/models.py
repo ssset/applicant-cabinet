@@ -14,7 +14,7 @@ class CustomUserManager(BaseUserManager):
         user = self.model(email=email, username=email, **extra_fields)
         user.set_password(password)
         user.role = role or 'applicant'
-        user.verification_code = str(uuid.uuid4())[:8]
+        user.verification_token = uuid.uuid4()
         user.consent_to_data_processing = consent_to_data_processing if consent_to_data_processing is not None else True
         if organization:
             user.organization = organization
@@ -40,7 +40,8 @@ class CustomUser(AbstractUser):
     email = models.EmailField(unique=True, verbose_name='Email')
     role = models.CharField(max_length=20, choices=ROLES, default='applicant', verbose_name='Role')
     is_verified = models.BooleanField(default=False, verbose_name='Email Verified')
-    verification_code = models.CharField(max_length=8, blank=True, null=True, verbose_name='Verification Code')
+    verification_token = models.UUIDField(default=uuid.uuid4, editable=False, null=True, blank=True,
+                                          verbose_name='Verification Token')
     consent_to_data_processing = models.BooleanField(default=True, verbose_name='Consent to Data Processing',)
     organization = models.ForeignKey('org.Organization', on_delete=models.SET_NULL, null=True, blank=True,
                                      verbose_name='Organization')

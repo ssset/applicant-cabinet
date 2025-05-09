@@ -1,8 +1,10 @@
+
 # auth/serializers.py
 from rest_framework import serializers
 from users.models import CustomUser
-from django.core.mail import send_mail
-
+from django.conf import settings
+from django.template.loader import render_to_string
+from applicant.tasks import send_email_task
 
 class RegisterSerializer(serializers.ModelSerializer):
     """
@@ -12,14 +14,13 @@ class RegisterSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = CustomUser
-        fields = ['id','email', 'password', 'password2', 'role', 'consent_to_data_processing']
+        fields = ['id', 'email', 'password', 'password2', 'role', 'consent_to_data_processing']
         extra_kwargs = {
             'password': {'write_only': True},
             'role': {'required': False}
         }
 
     def validate(self, data):
-        # Проверяем совпадение паролей только если password2 предоставлен
         if 'password2' in data and data['password'] != data['password2']:
             raise serializers.ValidationError('Passwords do not match')
         if not self.partial and not data.get('consent_to_data_processing', False):
@@ -34,11 +35,29 @@ class RegisterSerializer(serializers.ModelSerializer):
             role=validated_data.get('role', 'applicant'),
             consent_to_data_processing=validated_data['consent_to_data_processing']
         )
-        send_mail(
-            subject='Verify your email',
-            message=f'Your verification code: {user.verification_code}',
-            from_email='claimov@gmail.com',
+        # Формируем ссылку для верификации
+        verification_link = (
+            f"{settings.FRONTEND_URL}/verify-email/?token={user.verification_token}"
+        )
+
+        # Рендерим HTML-шаблон
+        email_context = {
+            'logo_url': 'http://localhost:5173/static/logo.png',  # Замени на реальный URL логотипа
+            'verify_url': verification_link,
+            'support_url': 'http://localhost:5173/support',  # Замени на реальный URL поддержки
+            'year': 2025,
+        }
+        email_html = render_to_string('email/verification_email.html', email_context)
+
+        # Асинхронно отправляем письмо через Celery
+        send_email_task.delay(
+            subject='Подтверждение Email',
+            message=(
+                f'Пожалуйста, подтвердите ваш email, перейдя по ссылке: {verification_link}\n\n'
+                f'После подтверждения вы будете перенаправлены на страницу входа.'
+            ),
+            from_email=settings.DEFAULT_FROM_EMAIL,
             recipient_list=[user.email],
-            fail_silently=True,
+            html_message=email_html,
         )
         return user

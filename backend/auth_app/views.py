@@ -1,3 +1,4 @@
+
 # auth/views.py
 import logging
 from rest_framework.views import APIView
@@ -25,42 +26,37 @@ class RegisterView(APIView):
             logger.info("Serializer is valid")
             user = serializer.save()
             return Response({
-                'message': 'User registered, check your email for verification code'
+                'message': 'User registered, check your email for verification link'
             }, status=status.HTTP_201_CREATED)
         logger.error(f"Serializer errors: {serializer.errors}")
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        return Response({'message': 'Пользователь с таким Email уже существует'}, status=status.HTTP_400_BAD_REQUEST)
 
 class VerifyEmailView(APIView):
     """
-    API для проверки верификационного кода и подтверждения email.
+    API для проверки верификационного токена и подтверждения email.
     """
     permission_classes = []
     authentication_classes = []
 
-    def post(self, request):
-        email = request.data.get('email')
-        code = request.data.get('verification_code')
-        try:
-            user = User.objects.get(email=email)
-            if user.verification_code == code and not user.is_verified:
-                user.is_verified = True
-                user.verification_code = None
-                user.save()
-                refresh = RefreshToken.for_user(user)
-                return Response({
-                    'message': 'Email verified successfully',
-                    'refresh': str(refresh),
-                    'access': str(refresh.access_token)
-                }, status=status.HTTP_200_OK)
+    def get(self, request):
+        token = request.query_params.get('token')
+        if not token:
+            return Response({'message': 'Verification token is required'}, status=status.HTTP_400_BAD_REQUEST)
 
-            elif user.is_verified:
+        try:
+            user = User.objects.get(verification_token=token)
+            if user.is_verified:
                 return Response({'message': 'Email already verified'}, status=status.HTTP_400_BAD_REQUEST)
 
-            else:
-                return Response({'message': 'Invalid verification code'}, status=status.HTTP_400_BAD_REQUEST)
+            user.is_verified = True
+            user.verification_token = None  # Очищаем токен после верификации
+            user.save()
+            return Response({
+                'message': 'Email verified successfully',
+            }, status=status.HTTP_200_OK)
 
         except User.DoesNotExist:
-            return Response({'message': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
+            return Response({'message': 'Invalid verification token'}, status=status.HTTP_400_BAD_REQUEST)
 
 class LoginView(APIView):
     """

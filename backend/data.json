@@ -1,0 +1,1536 @@
+[
+{
+  "model": "sessions.session",
+  "pk": "146t5g5nwfssu4obwkhfqu66k2r7jdx0",
+  "fields": {
+    "session_data": ".eJxVjEEOwiAQRe_C2hBAWsCl-56BzDCDVA0kpV0Z765NutDtf-_9l4iwrSVunZc4k7gII06_G0J6cN0B3aHemkytrsuMclfkQbucGvHzerh_BwV6-daB0Puzzcmn4EbigQMmyEO2gM5YZOU0sDE6kwpKazcqUlmh9ja7pFG8PwMyOF0:1u2tfY:HO5SBQ8f0oaso8K4bHZg8JvlKOGxt-4D-gmrJL0Ka7U",
+    "expire_date": "2025-04-24T15:18:20.329Z"
+  }
+},
+{
+  "model": "sessions.session",
+  "pk": "dunr6fv1wb85h3xe0hot13orgzs5z5kx",
+  "fields": {
+    "session_data": ".eJxVjEEOwiAQRe_C2hBAWsCl-56BzDCDVA0kpV0Z765NutDtf-_9l4iwrSVunZc4k7gII06_G0J6cN0B3aHemkytrsuMclfkQbucGvHzerh_BwV6-daB0Puzzcmn4EbigQMmyEO2gM5YZOU0sDE6kwpKazcqUlmh9ja7pFG8PwMyOF0:1u3Yvp:8IaqmQs30Q8pKSbBj1tE-V-C21nuvIYfC-fzXckvS84",
+    "expire_date": "2025-04-26T11:21:53.972Z"
+  }
+},
+{
+  "model": "users.customuser",
+  "fields": {
+    "password": "pbkdf2_sha256$600000$FJr9FrMLWpSE7HkPAOiliH$mIxoP6SrInHd5SZXrHwVHkGwV7RXXEcfUTTufcYUDhg=",
+    "last_login": null,
+    "is_superuser": false,
+    "username": "admin_app@example.com",
+    "first_name": "",
+    "last_name": "",
+    "is_staff": false,
+    "is_active": true,
+    "date_joined": "2025-03-16T19:33:48.808Z",
+    "email": "admin_app@example.com",
+    "role": "admin_app",
+    "is_verified": true,
+    "verification_code": null,
+    "consent_to_data_processing": true,
+    "organization": null,
+    "groups": [],
+    "user_permissions": []
+  }
+},
+{
+  "model": "users.customuser",
+  "fields": {
+    "password": "pbkdf2_sha256$600000$k17zdEHLYz2X1IC8pirKVY$L2SVbHWyxnixXfGBjTiAoRaxFBfJ/x8CfowkSad0oak=",
+    "last_login": "2025-04-12T11:21:53.927Z",
+    "is_superuser": true,
+    "username": "admin@gmail.com",
+    "first_name": "",
+    "last_name": "",
+    "is_staff": true,
+    "is_active": true,
+    "date_joined": "2025-04-10T15:05:47.013Z",
+    "email": "admin@gmail.com",
+    "role": "applicant",
+    "is_verified": true,
+    "verification_code": "4d7523be",
+    "consent_to_data_processing": true,
+    "organization": null,
+    "groups": [],
+    "user_permissions": []
+  }
+},
+{
+  "model": "users.customuser",
+  "fields": {
+    "password": "pbkdf2_sha256$600000$nZT2tXwwm82R9RT21LIkg8$XlNXGalcqUiTp013Io/DzOO8Cn9CJKrUR7H8HL+JWQY=",
+    "last_login": null,
+    "is_superuser": false,
+    "username": "admin1@gmail.com",
+    "first_name": "",
+    "last_name": "",
+    "is_staff": false,
+    "is_active": true,
+    "date_joined": "2025-04-10T20:39:02.052Z",
+    "email": "admin1@gmail.com",
+    "role": "applicant",
+    "is_verified": true,
+    "verification_code": "2575b583",
+    "consent_to_data_processing": true,
+    "organization": null,
+    "groups": [],
+    "user_permissions": []
+  }
+},
+{
+  "model": "users.customuser",
+  "fields": {
+    "password": "pbkdf2_sha256$600000$uJt0lMbNnxs4wuNpna7CAr$Wa1bXIIzMz6HyNchXxtgErRvcQc+amcLNAm0dKsmY8U=",
+    "last_login": null,
+    "is_superuser": false,
+    "username": "claimov@gmail.com",
+    "first_name": "",
+    "last_name": "",
+    "is_staff": false,
+    "is_active": true,
+    "date_joined": "2025-04-10T20:52:17.099Z",
+    "email": "claimov@gmail.com",
+    "role": "admin_app",
+    "is_verified": true,
+    "verification_code": null,
+    "consent_to_data_processing": true,
+    "organization": null,
+    "groups": [],
+    "user_permissions": []
+  }
+},
+{
+  "model": "users.customuser",
+  "fields": {
+    "password": "pbkdf2_sha256$600000$MevIeI81TwpuEN6aPxROQv$uro+OqvKqriOF3M2iufK7USjhIF85+CiOWRN0XROiXU=",
+    "last_login": null,
+    "is_superuser": false,
+    "username": "",
+    "first_name": "",
+    "last_name": "",
+    "is_staff": false,
+    "is_active": true,
+    "date_joined": "2025-04-12T11:24:28.726Z",
+    "email": "denis@gmail.com",
+    "role": "moderator",
+    "is_verified": true,
+    "verification_code": null,
+    "consent_to_data_processing": true,
+    "organization": 3,
+    "groups": [],
+    "user_permissions": []
+  }
+},
+{
+  "model": "users.customuser",
+  "fields": {
+    "password": "pbkdf2_sha256$600000$9DVknC6mQWaGuBgihBWCm6$V1EqzXbAAxpLafiqR00Lfn28RLnRTDtxhJ9EIyCvaNM=",
+    "last_login": null,
+    "is_superuser": false,
+    "username": "claimov1@gmail.com",
+    "first_name": "",
+    "last_name": "",
+    "is_staff": false,
+    "is_active": true,
+    "date_joined": "2025-04-12T21:05:05.926Z",
+    "email": "claimov1@gmail.com",
+    "role": "admin_org",
+    "is_verified": true,
+    "verification_code": "977695db",
+    "consent_to_data_processing": true,
+    "organization": 3,
+    "groups": [],
+    "user_permissions": []
+  }
+},
+{
+  "model": "users.customuser",
+  "fields": {
+    "password": "pbkdf2_sha256$600000$IyEUOZGoFS9UMcnriMCQpL$gPgymjg3OqFxgENX0PUg2Ym53ZTbsQtCT3/IyS/JalE=",
+    "last_login": null,
+    "is_superuser": false,
+    "username": "claimov3@gmail.com",
+    "first_name": "",
+    "last_name": "",
+    "is_staff": false,
+    "is_active": true,
+    "date_joined": "2025-04-16T18:55:35.851Z",
+    "email": "claimov3@gmail.com",
+    "role": "moderator",
+    "is_verified": true,
+    "verification_code": "8a333dea",
+    "consent_to_data_processing": true,
+    "organization": 2,
+    "groups": [],
+    "user_permissions": []
+  }
+},
+{
+  "model": "users.customuser",
+  "fields": {
+    "password": "pbkdf2_sha256$600000$CPY3qv708vEwu38d3hOUtH$xVzNJ6Gmf8PgMmiPh4mIp7whh0/OonAEIYMzWN1Efo0=",
+    "last_login": null,
+    "is_superuser": false,
+    "username": "claimov4@gmail.com",
+    "first_name": "",
+    "last_name": "",
+    "is_staff": false,
+    "is_active": true,
+    "date_joined": "2025-04-16T19:00:25.422Z",
+    "email": "claimov4@gmail.com",
+    "role": "moderator",
+    "is_verified": true,
+    "verification_code": "798bd961",
+    "consent_to_data_processing": true,
+    "organization": 2,
+    "groups": [],
+    "user_permissions": []
+  }
+},
+{
+  "model": "users.customuser",
+  "fields": {
+    "password": "pbkdf2_sha256$600000$60f3pqF1bBE0S8D2VBPC2O$ytsKrsrRzbJXMoeQloGb73W0thsvtTujF2s7UC40M+8=",
+    "last_login": null,
+    "is_superuser": false,
+    "username": "claimov10@gmail.com",
+    "first_name": "",
+    "last_name": "",
+    "is_staff": false,
+    "is_active": true,
+    "date_joined": "2025-04-18T19:27:42.780Z",
+    "email": "claimov10@gmail.com",
+    "role": "applicant",
+    "is_verified": true,
+    "verification_code": "f3441588",
+    "consent_to_data_processing": true,
+    "organization": null,
+    "groups": [],
+    "user_permissions": []
+  }
+},
+{
+  "model": "users.customuser",
+  "fields": {
+    "password": "pbkdf2_sha256$600000$FOvb5i4UgqQlEqCIwIifYU$ljXoAcLvjuaqP3mOKObl/Rf5bU6lCFb8BFHiMFRjgII=",
+    "last_login": null,
+    "is_superuser": false,
+    "username": "claimov11@gmail.com",
+    "first_name": "",
+    "last_name": "",
+    "is_staff": false,
+    "is_active": true,
+    "date_joined": "2025-04-19T15:26:25.684Z",
+    "email": "claimov11@gmail.com",
+    "role": "admin_org",
+    "is_verified": false,
+    "verification_code": "56f5765f",
+    "consent_to_data_processing": true,
+    "organization": 3,
+    "groups": [],
+    "user_permissions": []
+  }
+},
+{
+  "model": "users.customuser",
+  "fields": {
+    "password": "pbkdf2_sha256$600000$xPl3R5Ysi0wNyQEK8McfJ1$dcwsOj3OJCmNr0iOulc7RI38Bx4JXKDuYMZxWz53Bzc=",
+    "last_login": null,
+    "is_superuser": false,
+    "username": "claimov112@gmail.com",
+    "first_name": "",
+    "last_name": "",
+    "is_staff": false,
+    "is_active": true,
+    "date_joined": "2025-04-19T19:28:50.415Z",
+    "email": "claimov112@gmail.com",
+    "role": "moderator",
+    "is_verified": false,
+    "verification_code": "3b02bfb5",
+    "consent_to_data_processing": true,
+    "organization": 3,
+    "groups": [],
+    "user_permissions": []
+  }
+},
+{
+  "model": "users.customuser",
+  "fields": {
+    "password": "pbkdf2_sha256$600000$R3JCld3TQoZnY4SKPckcrK$wI9bOiPDJGZlyWSaqgJrAEmm//JcsEoXeUv+7CVGwHY=",
+    "last_login": null,
+    "is_superuser": false,
+    "username": "claimov113@gmail.com",
+    "first_name": "",
+    "last_name": "",
+    "is_staff": false,
+    "is_active": true,
+    "date_joined": "2025-04-19T19:29:49.153Z",
+    "email": "claimov113@gmail.com",
+    "role": "moderator",
+    "is_verified": false,
+    "verification_code": "7430f225",
+    "consent_to_data_processing": true,
+    "organization": 3,
+    "groups": [],
+    "user_permissions": []
+  }
+},
+{
+  "model": "users.customuser",
+  "fields": {
+    "password": "pbkdf2_sha256$600000$HjW22Gu40C2DXep36ZQjxK$iA3mOky59YcT1kODuEj9WYYBcHCtJyhrisZY1hXsD6Y=",
+    "last_login": null,
+    "is_superuser": false,
+    "username": "claimov114@gmail.com",
+    "first_name": "",
+    "last_name": "",
+    "is_staff": false,
+    "is_active": true,
+    "date_joined": "2025-04-19T19:38:22.923Z",
+    "email": "claimov114@gmail.com",
+    "role": "moderator",
+    "is_verified": false,
+    "verification_code": "683e14f9",
+    "consent_to_data_processing": true,
+    "organization": 3,
+    "groups": [],
+    "user_permissions": []
+  }
+},
+{
+  "model": "users.customuser",
+  "fields": {
+    "password": "pbkdf2_sha256$600000$JhpueMt18ipC9k3MTmFulI$OW3j/AgfTUBX6URmkaHe37/Vs1szIZnh2arHPA87Bu8=",
+    "last_login": null,
+    "is_superuser": false,
+    "username": "claimov115@gmail.com",
+    "first_name": "",
+    "last_name": "",
+    "is_staff": false,
+    "is_active": true,
+    "date_joined": "2025-04-19T19:38:58.960Z",
+    "email": "claimov115@gmail.com",
+    "role": "moderator",
+    "is_verified": false,
+    "verification_code": "4d8e2d9b",
+    "consent_to_data_processing": true,
+    "organization": 3,
+    "groups": [],
+    "user_permissions": []
+  }
+},
+{
+  "model": "users.customuser",
+  "fields": {
+    "password": "pbkdf2_sha256$600000$KXObVUsx4wkroy1vcVROKI$dqeAAJNwk6QJMBMNooFhD2B4iieqtufJZ3D4swF6EOs=",
+    "last_login": null,
+    "is_superuser": false,
+    "username": "claimov116@gmail.com",
+    "first_name": "",
+    "last_name": "",
+    "is_staff": false,
+    "is_active": true,
+    "date_joined": "2025-04-19T19:39:58.327Z",
+    "email": "claimov116@gmail.com",
+    "role": "moderator",
+    "is_verified": false,
+    "verification_code": "a19643ee",
+    "consent_to_data_processing": true,
+    "organization": 3,
+    "groups": [],
+    "user_permissions": []
+  }
+},
+{
+  "model": "users.customuser",
+  "fields": {
+    "password": "pbkdf2_sha256$600000$I6WjgPDrlnODR7F3k15xlX$eQpIU9Yehj8F0tgvmFxS0diTmmn5DNXtuNkrX2rl+2E=",
+    "last_login": null,
+    "is_superuser": false,
+    "username": "claimov117@gmail.com",
+    "first_name": "",
+    "last_name": "",
+    "is_staff": false,
+    "is_active": true,
+    "date_joined": "2025-04-19T19:43:04.542Z",
+    "email": "claimov117@gmail.com",
+    "role": "moderator",
+    "is_verified": false,
+    "verification_code": "aa41d4be",
+    "consent_to_data_processing": true,
+    "organization": 3,
+    "groups": [],
+    "user_permissions": []
+  }
+},
+{
+  "model": "users.customuser",
+  "fields": {
+    "password": "pbkdf2_sha256$600000$QXTiiSY9GM79YRtEzLEeDN$MSasIM6oY5WbY+tnDxIi+orPsammWfLycMdIOaAG3EI=",
+    "last_login": null,
+    "is_superuser": false,
+    "username": "claimov118@gmail.com",
+    "first_name": "",
+    "last_name": "",
+    "is_staff": false,
+    "is_active": true,
+    "date_joined": "2025-04-19T19:43:46.317Z",
+    "email": "claimov118@gmail.com",
+    "role": "moderator",
+    "is_verified": false,
+    "verification_code": "5743ce2b",
+    "consent_to_data_processing": true,
+    "organization": 3,
+    "groups": [],
+    "user_permissions": []
+  }
+},
+{
+  "model": "users.customuser",
+  "fields": {
+    "password": "pbkdf2_sha256$600000$0PdFFU8szF0AKZDGzfg3Tk$TlKCi8opKtyOBANnA2+O/LS+BH4NlreAJ+vB7sCbzRE=",
+    "last_login": null,
+    "is_superuser": false,
+    "username": "claimov120@gmail.com",
+    "first_name": "",
+    "last_name": "",
+    "is_staff": false,
+    "is_active": true,
+    "date_joined": "2025-04-19T19:46:11.317Z",
+    "email": "claimov120@gmail.com",
+    "role": "moderator",
+    "is_verified": false,
+    "verification_code": "2bbc214e",
+    "consent_to_data_processing": true,
+    "organization": 3,
+    "groups": [],
+    "user_permissions": []
+  }
+},
+{
+  "model": "users.customuser",
+  "fields": {
+    "password": "pbkdf2_sha256$600000$OsVeX1V7E97C1A1ZIh0SvV$vRp4+bwrG3PzTA2dtPhr3AUUUMRT7nE8vHiuSoqogj0=",
+    "last_login": null,
+    "is_superuser": false,
+    "username": "denisbondarev111@gmail.com",
+    "first_name": "",
+    "last_name": "",
+    "is_staff": false,
+    "is_active": true,
+    "date_joined": "2025-04-25T11:18:11.987Z",
+    "email": "denisbondarev111@gmail.com",
+    "role": "applicant",
+    "is_verified": false,
+    "verification_code": "d535100b",
+    "consent_to_data_processing": true,
+    "organization": null,
+    "groups": [],
+    "user_permissions": []
+  }
+},
+{
+  "model": "users.customuser",
+  "fields": {
+    "password": "pbkdf2_sha256$600000$0v0dmpLIZH8HoV52JZCcpb$Vf+umZ3c/Ubmbz/3WBOfCMIegh+ziqZifiN+F2TK38o=",
+    "last_login": null,
+    "is_superuser": false,
+    "username": "kek.lol.63@bk.ru",
+    "first_name": "",
+    "last_name": "",
+    "is_staff": false,
+    "is_active": true,
+    "date_joined": "2025-04-25T11:19:40.794Z",
+    "email": "kek.lol.63@bk.ru",
+    "role": "applicant",
+    "is_verified": true,
+    "verification_code": null,
+    "consent_to_data_processing": true,
+    "organization": null,
+    "groups": [],
+    "user_permissions": []
+  }
+},
+{
+  "model": "users.applicantprofile",
+  "pk": 1,
+  "fields": {
+    "user": [
+      "admin1@gmail.com"
+    ],
+    "photo": "applicant_photos/122886_41814_1.png",
+    "first_name": "Что",
+    "last_name": "За",
+    "middle_name": "вфыввыфввфывфыв",
+    "date_of_birth": "2025-04-04",
+    "citizenship": "Россия",
+    "birth_place": "Ростов-на-Дону",
+    "passport_series": "112039",
+    "passport_number": "dasdasdd",
+    "passport_issued_date": "2025-04-10",
+    "passport_issued_by": "asdasdasd",
+    "snils": "1234567890",
+    "registration_address": "Красноармейская 228",
+    "actual_address": "Москва",
+    "phone": "+79613029346",
+    "education_type": "npo",
+    "education_institution": "ркси",
+    "graduation_year": 2022,
+    "document_type": "diploma",
+    "document_series": "449014",
+    "document_number": "фывфывфыв",
+    "average_grade": "5.0",
+    "calculated_average_grade": "4.4",
+    "foreign_languages": [
+      "Английский"
+    ],
+    "attestation_photo": "attestations/122886_41814_1_X1RE3dx.png",
+    "additional_info": "",
+    "mother_full_name": "Что За",
+    "mother_workplace": "уавыавыа",
+    "mother_phone": "+79613029346",
+    "father_full_name": "Что За",
+    "father_workplace": "ываываывfff",
+    "father_phone": "+79613029346"
+  }
+},
+{
+  "model": "users.applicantprofile",
+  "pk": 2,
+  "fields": {
+    "user": [
+      "claimov10@gmail.com"
+    ],
+    "photo": "applicant_photos/122886_41814.png",
+    "first_name": "Что",
+    "last_name": "За",
+    "middle_name": "вфыввыфввфывфыв",
+    "date_of_birth": "2025-04-11",
+    "citizenship": "Россия",
+    "birth_place": "Ростов-на-Дону",
+    "passport_series": "112039",
+    "passport_number": "1283473",
+    "passport_issued_date": "2025-04-02",
+    "passport_issued_by": "asdasdasd",
+    "snils": "1234567834",
+    "registration_address": "Красноармейская 228",
+    "actual_address": "Москва",
+    "phone": "+79613029346",
+    "education_type": "other",
+    "education_institution": "ркси",
+    "graduation_year": 2022,
+    "document_type": "diploma",
+    "document_series": "449014",
+    "document_number": "фывфывфыв",
+    "average_grade": "5.0",
+    "calculated_average_grade": null,
+    "foreign_languages": null,
+    "attestation_photo": "attestations/122886_41814_YfhzdQT.png",
+    "additional_info": "",
+    "mother_full_name": "Денис",
+    "mother_workplace": "уавыавыа",
+    "mother_phone": "+79613029346",
+    "father_full_name": "Денис",
+    "father_workplace": "ываываывfff",
+    "father_phone": "+79613029346"
+  }
+},
+{
+  "model": "org.organization",
+  "pk": 2,
+  "fields": {
+    "name": "фывыфв",
+    "email": "claimov@gmail.com",
+    "phone": "89613029346",
+    "address": "ул. Мечникова 124/172",
+    "created_at": "2025-04-19",
+    "updated_at": "2025-04-19"
+  }
+},
+{
+  "model": "org.organization",
+  "pk": 3,
+  "fields": {
+    "name": "Ркси",
+    "email": "claimov@gmail.com",
+    "phone": "89613029346",
+    "address": "Красноармейская 228\r\nМосква",
+    "created_at": "2025-04-14",
+    "updated_at": "2025-04-14"
+  }
+},
+{
+  "model": "org.building",
+  "pk": 1,
+  "fields": {
+    "organization": 2,
+    "name": "Корпус на тургеневской",
+    "address": "ул. Мечникова 124/172",
+    "phone": "89613029346",
+    "email": "claimov@gmail.com",
+    "created_at": "2025-04-13T21:03:31.290Z",
+    "updated_at": "2025-04-19T18:20:49.947Z"
+  }
+},
+{
+  "model": "org.building",
+  "pk": 2,
+  "fields": {
+    "organization": 3,
+    "name": "Корпус на  ул. Тургеневская",
+    "address": "пер. Островского 153",
+    "phone": "89613029346",
+    "email": "claimov@gmail.com",
+    "created_at": "2025-04-14T17:23:52.902Z",
+    "updated_at": "2025-04-14T17:23:52.902Z"
+  }
+},
+{
+  "model": "org.building",
+  "pk": 3,
+  "fields": {
+    "organization": 2,
+    "name": "Корпус не на тургеневской",
+    "address": "Красноармейская 228",
+    "phone": "+79613029346",
+    "email": "claimov@gmail.com",
+    "created_at": "2025-04-19T18:20:49.961Z",
+    "updated_at": "2025-04-19T18:20:49.962Z"
+  }
+},
+{
+  "model": "org.specialty",
+  "pk": 2,
+  "fields": {
+    "organization": 2,
+    "code": "МДК 01",
+    "name": "Информационные системы и программирование",
+    "created_at": "2025-04-13T21:02:55.401Z",
+    "updated_at": "2025-04-13T21:02:55.401Z",
+    "duration": "4 года",
+    "requirements": "Егэ по математике 70 баллов"
+  }
+},
+{
+  "model": "org.specialty",
+  "pk": 3,
+  "fields": {
+    "organization": 3,
+    "code": "МДК 01",
+    "name": "Информационные системы и программирование",
+    "created_at": "2025-04-14T17:25:00.154Z",
+    "updated_at": "2025-04-14T17:25:00.154Z",
+    "duration": "4 года",
+    "requirements": "Егэ"
+  }
+},
+{
+  "model": "org.specialty",
+  "pk": 4,
+  "fields": {
+    "organization": 2,
+    "code": "МДК 02",
+    "name": "Информационные системы и программирование",
+    "created_at": "2025-04-15T21:25:13.099Z",
+    "updated_at": "2025-04-15T21:25:13.099Z",
+    "duration": "4 года",
+    "requirements": "фывфывфыв"
+  }
+},
+{
+  "model": "org.specialty",
+  "pk": 5,
+  "fields": {
+    "organization": 3,
+    "code": "МДК 12",
+    "name": "Новая тестовая специальность",
+    "created_at": "2025-04-19T19:24:50.869Z",
+    "updated_at": "2025-04-19T19:24:50.869Z",
+    "duration": "4 года",
+    "requirements": "нет"
+  }
+},
+{
+  "model": "org.specialty",
+  "pk": 6,
+  "fields": {
+    "organization": 3,
+    "code": "фывфыв",
+    "name": "Тестовая специальность 1",
+    "created_at": "2025-04-21T20:26:56.105Z",
+    "updated_at": "2025-04-21T20:26:56.105Z",
+    "duration": "",
+    "requirements": ""
+  }
+},
+{
+  "model": "org.specialty",
+  "pk": 7,
+  "fields": {
+    "organization": 3,
+    "code": "МДК 03",
+    "name": "Тестовая специальность 2",
+    "created_at": "2025-04-21T20:27:18.336Z",
+    "updated_at": "2025-04-21T20:27:18.336Z",
+    "duration": "4 года",
+    "requirements": ""
+  }
+},
+{
+  "model": "org.buildingspecialty",
+  "pk": 3,
+  "fields": {
+    "building": 2,
+    "specialty": 3,
+    "budget_places": 6,
+    "commercial_places": 10,
+    "commercial_price": "444444.00"
+  }
+},
+{
+  "model": "org.buildingspecialty",
+  "pk": 4,
+  "fields": {
+    "building": 1,
+    "specialty": 4,
+    "budget_places": 12,
+    "commercial_places": 15,
+    "commercial_price": "0.38"
+  }
+},
+{
+  "model": "org.buildingspecialty",
+  "pk": 5,
+  "fields": {
+    "building": 2,
+    "specialty": 5,
+    "budget_places": 1,
+    "commercial_places": 10000,
+    "commercial_price": "1000.00"
+  }
+},
+{
+  "model": "org.buildingspecialty",
+  "pk": 6,
+  "fields": {
+    "building": 2,
+    "specialty": 6,
+    "budget_places": 123123,
+    "commercial_places": 123123,
+    "commercial_price": "1312312.00"
+  }
+},
+{
+  "model": "org.buildingspecialty",
+  "pk": 7,
+  "fields": {
+    "building": 2,
+    "specialty": 7,
+    "budget_places": 1110,
+    "commercial_places": 123,
+    "commercial_price": "12312312.00"
+  }
+},
+{
+  "model": "applications.application",
+  "pk": 3,
+  "fields": {
+    "applicant": [
+      "admin1@gmail.com"
+    ],
+    "building_specialty": 3,
+    "priority": 1,
+    "course": 1,
+    "study_form": "full_time",
+    "funding_basis": "budget",
+    "dormitory_needed": false,
+    "first_time_education": true,
+    "info_source": "Сайт организации",
+    "status": "accepted",
+    "reject_reason": null,
+    "created_at": "2025-04-14T17:44:03.528Z",
+    "updated_at": "2025-04-16T15:17:58.468Z"
+  }
+},
+{
+  "model": "applications.application",
+  "pk": 4,
+  "fields": {
+    "applicant": [
+      "admin1@gmail.com"
+    ],
+    "building_specialty": 4,
+    "priority": 1,
+    "course": 1,
+    "study_form": "full_time",
+    "funding_basis": "budget",
+    "dormitory_needed": false,
+    "first_time_education": true,
+    "info_source": "Сайт организации",
+    "status": "pending",
+    "reject_reason": null,
+    "created_at": "2025-04-16T17:15:14.357Z",
+    "updated_at": "2025-04-16T17:15:14.357Z"
+  }
+},
+{
+  "model": "applications.application",
+  "pk": 5,
+  "fields": {
+    "applicant": [
+      "claimov10@gmail.com"
+    ],
+    "building_specialty": 3,
+    "priority": 1,
+    "course": 1,
+    "study_form": "full_time",
+    "funding_basis": "budget",
+    "dormitory_needed": false,
+    "first_time_education": true,
+    "info_source": "Сайт организации",
+    "status": "rejected",
+    "reject_reason": "вы мне не нравитесь\n",
+    "created_at": "2025-04-18T19:52:59.440Z",
+    "updated_at": "2025-04-19T19:20:39.284Z"
+  }
+},
+{
+  "model": "applications.application",
+  "pk": 6,
+  "fields": {
+    "applicant": [
+      "claimov10@gmail.com"
+    ],
+    "building_specialty": 4,
+    "priority": 1,
+    "course": 1,
+    "study_form": "full_time",
+    "funding_basis": "budget",
+    "dormitory_needed": false,
+    "first_time_education": true,
+    "info_source": "Сайт организации",
+    "status": "pending",
+    "reject_reason": null,
+    "created_at": "2025-04-18T20:21:05.970Z",
+    "updated_at": "2025-04-18T20:21:05.970Z"
+  }
+},
+{
+  "model": "applications.application",
+  "pk": 7,
+  "fields": {
+    "applicant": [
+      "admin1@gmail.com"
+    ],
+    "building_specialty": 5,
+    "priority": 1,
+    "course": 1,
+    "study_form": "full_time",
+    "funding_basis": "budget",
+    "dormitory_needed": false,
+    "first_time_education": true,
+    "info_source": "Сайт организации",
+    "status": "rejected",
+    "reject_reason": "вы мне ещё сильнее не нравитесь\n",
+    "created_at": "2025-04-19T19:25:24.833Z",
+    "updated_at": "2025-04-19T19:25:48.607Z"
+  }
+},
+{
+  "model": "applications.application",
+  "pk": 8,
+  "fields": {
+    "applicant": [
+      "admin1@gmail.com"
+    ],
+    "building_specialty": 7,
+    "priority": 1,
+    "course": 1,
+    "study_form": "full_time",
+    "funding_basis": "budget",
+    "dormitory_needed": false,
+    "first_time_education": true,
+    "info_source": "Сайт организации",
+    "status": "pending",
+    "reject_reason": null,
+    "created_at": "2025-04-21T20:31:37.757Z",
+    "updated_at": "2025-04-21T20:31:37.757Z"
+  }
+},
+{
+  "model": "message.chat",
+  "pk": 4,
+  "fields": {
+    "organization": 3,
+    "applicant": [
+      "admin1@gmail.com"
+    ],
+    "created_at": "2025-04-18T20:19:18.883Z",
+    "updated_at": "2025-04-18T20:19:18.883Z"
+  }
+},
+{
+  "model": "message.chat",
+  "pk": 5,
+  "fields": {
+    "organization": 3,
+    "applicant": [
+      "claimov10@gmail.com"
+    ],
+    "created_at": "2025-04-18T20:20:38.984Z",
+    "updated_at": "2025-04-18T20:20:38.984Z"
+  }
+},
+{
+  "model": "message.chat",
+  "pk": 6,
+  "fields": {
+    "organization": 2,
+    "applicant": [
+      "claimov10@gmail.com"
+    ],
+    "created_at": "2025-04-18T20:21:09.070Z",
+    "updated_at": "2025-04-18T20:21:09.070Z"
+  }
+},
+{
+  "model": "message.message",
+  "pk": 28,
+  "fields": {
+    "chat": 4,
+    "sender": [
+      "admin1@gmail.com"
+    ],
+    "content": "добрый день, рублями берете",
+    "created_at": "2025-04-18T20:19:58.657Z"
+  }
+},
+{
+  "model": "message.message",
+  "pk": 29,
+  "fields": {
+    "chat": 6,
+    "sender": [
+      "claimov10@gmail.com"
+    ],
+    "content": "добрый день, а вы долларами берете?",
+    "created_at": "2025-04-18T20:21:23.556Z"
+  }
+},
+{
+  "model": "message.message",
+  "pk": 30,
+  "fields": {
+    "chat": 4,
+    "sender": [
+      "admin1@gmail.com"
+    ],
+    "content": "да берем",
+    "created_at": "2025-04-18T20:23:50.757Z"
+  }
+},
+{
+  "model": "message.message",
+  "pk": 31,
+  "fields": {
+    "chat": 4,
+    "sender": [
+      "denis@gmail.com"
+    ],
+    "content": "вы зачем в чате спамите?",
+    "created_at": "2025-04-18T20:24:05.434Z"
+  }
+},
+{
+  "model": "message.message",
+  "pk": 32,
+  "fields": {
+    "chat": 4,
+    "sender": [
+      "admin1@gmail.com"
+    ],
+    "content": "да так, прост..",
+    "created_at": "2025-04-18T20:24:19.904Z"
+  }
+},
+{
+  "model": "admin.logentry",
+  "pk": 1,
+  "fields": {
+    "action_time": "2025-04-12T11:24:28.979Z",
+    "user": [
+      "admin@gmail.com"
+    ],
+    "content_type": [
+      "users",
+      "customuser"
+    ],
+    "object_id": "5",
+    "object_repr": "denis@gmail.com",
+    "action_flag": 1,
+    "change_message": "[{\"added\": {}}]"
+  }
+},
+{
+  "model": "admin.logentry",
+  "pk": 2,
+  "fields": {
+    "action_time": "2025-04-12T11:25:07.345Z",
+    "user": [
+      "admin@gmail.com"
+    ],
+    "content_type": [
+      "users",
+      "customuser"
+    ],
+    "object_id": "5",
+    "object_repr": "denis@gmail.com",
+    "action_flag": 2,
+    "change_message": "[{\"changed\": {\"fields\": [\"Email Verified\"]}}]"
+  }
+},
+{
+  "model": "admin.logentry",
+  "pk": 3,
+  "fields": {
+    "action_time": "2025-04-12T11:26:07.726Z",
+    "user": [
+      "admin@gmail.com"
+    ],
+    "content_type": [
+      "users",
+      "customuser"
+    ],
+    "object_id": "3",
+    "object_repr": "admin1@gmail.com",
+    "action_flag": 2,
+    "change_message": "[{\"changed\": {\"fields\": [\"Role\"]}}]"
+  }
+},
+{
+  "model": "admin.logentry",
+  "pk": 4,
+  "fields": {
+    "action_time": "2025-04-12T11:43:57.870Z",
+    "user": [
+      "admin@gmail.com"
+    ],
+    "content_type": [
+      "org",
+      "organization"
+    ],
+    "object_id": "1",
+    "object_repr": "РКСИ",
+    "action_flag": 1,
+    "change_message": "[{\"added\": {}}]"
+  }
+},
+{
+  "model": "admin.logentry",
+  "pk": 5,
+  "fields": {
+    "action_time": "2025-04-12T11:44:03.356Z",
+    "user": [
+      "admin@gmail.com"
+    ],
+    "content_type": [
+      "users",
+      "customuser"
+    ],
+    "object_id": "5",
+    "object_repr": "denis@gmail.com",
+    "action_flag": 2,
+    "change_message": "[{\"changed\": {\"fields\": [\"Organization\"]}}]"
+  }
+},
+{
+  "model": "admin.logentry",
+  "pk": 6,
+  "fields": {
+    "action_time": "2025-04-12T12:18:43.951Z",
+    "user": [
+      "admin@gmail.com"
+    ],
+    "content_type": [
+      "users",
+      "customuser"
+    ],
+    "object_id": "4",
+    "object_repr": "claimov@gmail.com",
+    "action_flag": 2,
+    "change_message": "[{\"changed\": {\"fields\": [\"Role\", \"Organization\"]}}]"
+  }
+},
+{
+  "model": "admin.logentry",
+  "pk": 7,
+  "fields": {
+    "action_time": "2025-04-12T12:18:55.095Z",
+    "user": [
+      "admin@gmail.com"
+    ],
+    "content_type": [
+      "users",
+      "customuser"
+    ],
+    "object_id": "3",
+    "object_repr": "admin1@gmail.com",
+    "action_flag": 2,
+    "change_message": "[{\"changed\": {\"fields\": [\"Email Verified\"]}}]"
+  }
+},
+{
+  "model": "admin.logentry",
+  "pk": 8,
+  "fields": {
+    "action_time": "2025-04-12T15:29:29.403Z",
+    "user": [
+      "admin@gmail.com"
+    ],
+    "content_type": [
+      "users",
+      "customuser"
+    ],
+    "object_id": "3",
+    "object_repr": "admin1@gmail.com",
+    "action_flag": 2,
+    "change_message": "[{\"changed\": {\"fields\": [\"Organization\"]}}]"
+  }
+},
+{
+  "model": "admin.logentry",
+  "pk": 9,
+  "fields": {
+    "action_time": "2025-04-12T16:27:37.849Z",
+    "user": [
+      "admin@gmail.com"
+    ],
+    "content_type": [
+      "users",
+      "customuser"
+    ],
+    "object_id": "4",
+    "object_repr": "claimov@gmail.com",
+    "action_flag": 2,
+    "change_message": "[{\"changed\": {\"fields\": [\"Role\"]}}]"
+  }
+},
+{
+  "model": "admin.logentry",
+  "pk": 10,
+  "fields": {
+    "action_time": "2025-04-12T20:57:43.921Z",
+    "user": [
+      "admin@gmail.com"
+    ],
+    "content_type": [
+      "users",
+      "customuser"
+    ],
+    "object_id": "3",
+    "object_repr": "admin1@gmail.com",
+    "action_flag": 2,
+    "change_message": "[{\"changed\": {\"fields\": [\"Role\"]}}]"
+  }
+},
+{
+  "model": "admin.logentry",
+  "pk": 11,
+  "fields": {
+    "action_time": "2025-04-13T19:18:10.865Z",
+    "user": [
+      "admin@gmail.com"
+    ],
+    "content_type": [
+      "org",
+      "specialty"
+    ],
+    "object_id": "1",
+    "object_repr": "МДК 01 - Информационные системы и программирование (фывыфв)",
+    "action_flag": 1,
+    "change_message": "[{\"added\": {}}]"
+  }
+},
+{
+  "model": "admin.logentry",
+  "pk": 12,
+  "fields": {
+    "action_time": "2025-04-13T20:12:21.833Z",
+    "user": [
+      "admin@gmail.com"
+    ],
+    "content_type": [
+      "org",
+      "specialty"
+    ],
+    "object_id": "1",
+    "object_repr": "МДК 01 - Информационные системы и программирование (фывыфв)",
+    "action_flag": 2,
+    "change_message": "[{\"changed\": {\"fields\": [\"\\u0421\\u0440\\u043e\\u043a \\u043e\\u0431\\u0443\\u0447\\u0435\\u043d\\u0438\\u044f\", \"\\u0412\\u0441\\u0442\\u0443\\u043f\\u0438\\u0442\\u0435\\u043b\\u044c\\u043d\\u044b\\u0435 \\u044d\\u043a\\u0437\\u0430\\u043c\\u0435\\u043d\\u044b\"]}}]"
+  }
+},
+{
+  "model": "admin.logentry",
+  "pk": 13,
+  "fields": {
+    "action_time": "2025-04-13T20:19:53.668Z",
+    "user": [
+      "admin@gmail.com"
+    ],
+    "content_type": [
+      "users",
+      "customuser"
+    ],
+    "object_id": "6",
+    "object_repr": "claimov1@gmail.com",
+    "action_flag": 2,
+    "change_message": "[{\"changed\": {\"fields\": [\"Email Verified\"]}}]"
+  }
+},
+{
+  "model": "admin.logentry",
+  "pk": 14,
+  "fields": {
+    "action_time": "2025-04-13T21:02:55.402Z",
+    "user": [
+      "admin@gmail.com"
+    ],
+    "content_type": [
+      "org",
+      "specialty"
+    ],
+    "object_id": "2",
+    "object_repr": "МДК 01 - Информационные системы и программирование (фывыфв)",
+    "action_flag": 1,
+    "change_message": "[{\"added\": {}}]"
+  }
+},
+{
+  "model": "admin.logentry",
+  "pk": 15,
+  "fields": {
+    "action_time": "2025-04-13T21:03:31.290Z",
+    "user": [
+      "admin@gmail.com"
+    ],
+    "content_type": [
+      "org",
+      "building"
+    ],
+    "object_id": "1",
+    "object_repr": "Корпус на тургеневской (фывыфв)",
+    "action_flag": 1,
+    "change_message": "[{\"added\": {}}]"
+  }
+},
+{
+  "model": "admin.logentry",
+  "pk": 16,
+  "fields": {
+    "action_time": "2025-04-13T21:03:51.241Z",
+    "user": [
+      "admin@gmail.com"
+    ],
+    "content_type": [
+      "org",
+      "buildingspecialty"
+    ],
+    "object_id": "1",
+    "object_repr": "Информационные системы и программирование в Корпус на тургеневской",
+    "action_flag": 1,
+    "change_message": "[{\"added\": {}}]"
+  }
+},
+{
+  "model": "admin.logentry",
+  "pk": 17,
+  "fields": {
+    "action_time": "2025-04-14T17:23:28.536Z",
+    "user": [
+      "admin@gmail.com"
+    ],
+    "content_type": [
+      "org",
+      "organization"
+    ],
+    "object_id": "3",
+    "object_repr": "Ркси",
+    "action_flag": 1,
+    "change_message": "[{\"added\": {}}]"
+  }
+},
+{
+  "model": "admin.logentry",
+  "pk": 18,
+  "fields": {
+    "action_time": "2025-04-14T17:23:52.904Z",
+    "user": [
+      "admin@gmail.com"
+    ],
+    "content_type": [
+      "org",
+      "building"
+    ],
+    "object_id": "2",
+    "object_repr": "Корпус на  ул. Тургеневская (Ркси)",
+    "action_flag": 1,
+    "change_message": "[{\"added\": {}}]"
+  }
+},
+{
+  "model": "admin.logentry",
+  "pk": 19,
+  "fields": {
+    "action_time": "2025-04-14T17:25:00.155Z",
+    "user": [
+      "admin@gmail.com"
+    ],
+    "content_type": [
+      "org",
+      "specialty"
+    ],
+    "object_id": "3",
+    "object_repr": "МДК 01 - Информационные системы и программирование (Ркси)",
+    "action_flag": 1,
+    "change_message": "[{\"added\": {}}]"
+  }
+},
+{
+  "model": "admin.logentry",
+  "pk": 20,
+  "fields": {
+    "action_time": "2025-04-14T17:25:17.539Z",
+    "user": [
+      "admin@gmail.com"
+    ],
+    "content_type": [
+      "org",
+      "buildingspecialty"
+    ],
+    "object_id": "2",
+    "object_repr": "Информационные системы и программирование в Корпус на  ул. Тургеневская",
+    "action_flag": 1,
+    "change_message": "[{\"added\": {}}]"
+  }
+},
+{
+  "model": "admin.logentry",
+  "pk": 21,
+  "fields": {
+    "action_time": "2025-04-14T17:36:03.912Z",
+    "user": [
+      "admin@gmail.com"
+    ],
+    "content_type": [
+      "org",
+      "buildingspecialty"
+    ],
+    "object_id": "3",
+    "object_repr": "Информационные системы и программирование в Корпус на  ул. Тургеневская",
+    "action_flag": 1,
+    "change_message": "[{\"added\": {}}]"
+  }
+},
+{
+  "model": "admin.logentry",
+  "pk": 22,
+  "fields": {
+    "action_time": "2025-04-14T17:42:55.924Z",
+    "user": [
+      "admin@gmail.com"
+    ],
+    "content_type": [
+      "applications",
+      "application"
+    ],
+    "object_id": "1",
+    "object_repr": "Заявка admin1@gmail.com на Информационные системы и программирование (Приоритет: 1)",
+    "action_flag": 3,
+    "change_message": ""
+  }
+},
+{
+  "model": "admin.logentry",
+  "pk": 23,
+  "fields": {
+    "action_time": "2025-04-14T17:43:26.542Z",
+    "user": [
+      "admin@gmail.com"
+    ],
+    "content_type": [
+      "applications",
+      "application"
+    ],
+    "object_id": "2",
+    "object_repr": "Заявка admin1@gmail.com на Информационные системы и программирование (Приоритет: 1)",
+    "action_flag": 3,
+    "change_message": ""
+  }
+},
+{
+  "model": "admin.logentry",
+  "pk": 24,
+  "fields": {
+    "action_time": "2025-04-14T17:50:50.309Z",
+    "user": [
+      "admin@gmail.com"
+    ],
+    "content_type": [
+      "org",
+      "buildingspecialty"
+    ],
+    "object_id": "2",
+    "object_repr": "Информационные системы и программирование в Корпус на  ул. Тургеневская",
+    "action_flag": 3,
+    "change_message": ""
+  }
+},
+{
+  "model": "admin.logentry",
+  "pk": 25,
+  "fields": {
+    "action_time": "2025-04-14T17:50:50.334Z",
+    "user": [
+      "admin@gmail.com"
+    ],
+    "content_type": [
+      "org",
+      "buildingspecialty"
+    ],
+    "object_id": "1",
+    "object_repr": "Информационные системы и программирование в Корпус на тургеневской",
+    "action_flag": 3,
+    "change_message": ""
+  }
+},
+{
+  "model": "admin.logentry",
+  "pk": 26,
+  "fields": {
+    "action_time": "2025-04-16T10:01:58.210Z",
+    "user": [
+      "admin@gmail.com"
+    ],
+    "content_type": [
+      "users",
+      "customuser"
+    ],
+    "object_id": "5",
+    "object_repr": "denis@gmail.com",
+    "action_flag": 2,
+    "change_message": "[{\"changed\": {\"fields\": [\"Organization\"]}}]"
+  }
+},
+{
+  "model": "admin.logentry",
+  "pk": 27,
+  "fields": {
+    "action_time": "2025-04-17T17:36:41.693Z",
+    "user": [
+      "admin@gmail.com"
+    ],
+    "content_type": [
+      "users",
+      "customuser"
+    ],
+    "object_id": "7",
+    "object_repr": "claimov3@gmail.com",
+    "action_flag": 2,
+    "change_message": "[{\"changed\": {\"fields\": [\"Email Verified\"]}}]"
+  }
+},
+{
+  "model": "admin.logentry",
+  "pk": 28,
+  "fields": {
+    "action_time": "2025-04-17T17:36:46.926Z",
+    "user": [
+      "admin@gmail.com"
+    ],
+    "content_type": [
+      "users",
+      "customuser"
+    ],
+    "object_id": "8",
+    "object_repr": "claimov4@gmail.com",
+    "action_flag": 2,
+    "change_message": "[]"
+  }
+},
+{
+  "model": "admin.logentry",
+  "pk": 29,
+  "fields": {
+    "action_time": "2025-04-17T17:37:39.225Z",
+    "user": [
+      "admin@gmail.com"
+    ],
+    "content_type": [
+      "users",
+      "customuser"
+    ],
+    "object_id": "8",
+    "object_repr": "claimov4@gmail.com",
+    "action_flag": 2,
+    "change_message": "[{\"changed\": {\"fields\": [\"Email Verified\"]}}]"
+  }
+},
+{
+  "model": "admin.logentry",
+  "pk": 30,
+  "fields": {
+    "action_time": "2025-04-17T17:39:02.899Z",
+    "user": [
+      "admin@gmail.com"
+    ],
+    "content_type": [
+      "users",
+      "customuser"
+    ],
+    "object_id": "9",
+    "object_repr": "claimov5@gmail.com",
+    "action_flag": 2,
+    "change_message": "[{\"changed\": {\"fields\": [\"Email Verified\"]}}]"
+  }
+},
+{
+  "model": "admin.logentry",
+  "pk": 31,
+  "fields": {
+    "action_time": "2025-04-18T19:28:26.877Z",
+    "user": [
+      "admin@gmail.com"
+    ],
+    "content_type": [
+      "users",
+      "customuser"
+    ],
+    "object_id": "10",
+    "object_repr": "claimov10@gmail.com",
+    "action_flag": 2,
+    "change_message": "[{\"changed\": {\"fields\": [\"Email Verified\"]}}]"
+  }
+},
+{
+  "model": "admin.logentry",
+  "pk": 32,
+  "fields": {
+    "action_time": "2025-04-19T15:26:52.116Z",
+    "user": [
+      "admin@gmail.com"
+    ],
+    "content_type": [
+      "users",
+      "customuser"
+    ],
+    "object_id": "6",
+    "object_repr": "claimov1@gmail.com",
+    "action_flag": 2,
+    "change_message": "[{\"changed\": {\"fields\": [\"Organization\"]}}]"
+  }
+}
+]

@@ -13,7 +13,7 @@ class BuildingSerializer(serializers.ModelSerializer):
         model = Building
         fields = ['id', 'organization', 'name', 'address', 'phone', 'email', 'created_at', 'updated_at']
         extra_kwargs = {
-            'organization': {'write_only': True}
+            'organization': {'required': True}
         }
 
     def validate(self, data):
@@ -34,12 +34,25 @@ class BuildingSerializer(serializers.ModelSerializer):
                     raise serializers.ValidationError('A building with this name already exists in the organization')
         return data
 
+
 class OrganizationSerializer(serializers.ModelSerializer):
-    buildings = BuildingSerializer(many=True, read_only=True)  # Включаем корпуса
+    buildings = serializers.PrimaryKeyRelatedField(many=True, read_only=True)
 
     class Meta:
         model = Organization
-        fields = ['id', 'name', 'email', 'phone', 'address', 'created_at', 'updated_at', 'buildings']
+        fields = ['id', 'name', 'email', 'phone', 'address', 'website', 'description', 'created_at', 'updated_at', 'buildings', 'city']
+        extra_kwargs = {
+            'name': {'required': True},
+            'email': {'required': True},
+            'phone': {'required': True},
+            'address': {'required': True},
+            'city': {'required': True},  # Добавляем city как обязательное поле
+        }
+
+    def validate_email(self, value):
+        if Organization.objects.filter(email=value).exists():
+            raise serializers.ValidationError("Organization with this email already exists.")
+        return value
 
 
 class SimpleSpecialtySerializer(serializers.ModelSerializer):

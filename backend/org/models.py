@@ -8,7 +8,10 @@ class Organization(models.Model):
     name = models.CharField(max_length=100, verbose_name='Name')
     email = models.EmailField(verbose_name='Email')
     phone = models.CharField(max_length=20, verbose_name='Phone')
+    website = models.URLField(blank=True, null=True, verbose_name='Website')
+    description = models.TextField(blank=True, null=True, verbose_name='Description')
     address = models.TextField(verbose_name='Adress')
+    city = models.CharField(max_length=100, blank=True, null=True, verbose_name='City')
     created_at = models.DateField(auto_now=True, verbose_name='Created At')
     updated_at = models.DateField(auto_now=True, verbose_name='Updated at')
 

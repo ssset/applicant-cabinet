@@ -6,6 +6,7 @@ from org.serializers import BuildingSpecialtySerializer
 from users.models import ApplicantProfile
 from users.serializers import ApplicantProfileSerializer
 
+
 class ApplicationSerializer(serializers.ModelSerializer):
     building_specialty = BuildingSpecialtySerializer(read_only=True)
     building_specialty_id = serializers.PrimaryKeyRelatedField(
@@ -44,10 +45,27 @@ class ApplicationSerializer(serializers.ModelSerializer):
         if applicant.role != 'applicant':
             raise serializers.ValidationError('Only applicants can submit applications.')
 
-        if self.instance is None:
-            if Application.objects.filter(applicant=applicant, building_specialty=building_specialty).exists():
-                raise serializers.ValidationError('You have already applied to this specialty in this building.')
+        # Подсчитываем все заявки на эту специальность в этом корпусе
+        existing_applications = Application.objects.filter(
+            applicant=applicant,
+            building_specialty=building_specialty
+        )
 
+        # Проверяем количество попыток (максимум 3, включая текущую)
+        if len(existing_applications) >= 3:
+            raise serializers.ValidationError(
+                'You have reached the maximum number of application attempts (3) for this specialty.'
+            )
+
+        if self.instance is None:  # Создание новой заявки
+            # Проверяем, есть ли среди существующих заявок те, которые не отклонены
+            non_rejected_applications = existing_applications.exclude(status='rejected')
+            if non_rejected_applications.exists():
+                raise serializers.ValidationError(
+                    'You cannot apply to this specialty because you have a non-rejected application.'
+                )
+
+        # Проверка доступности мест
         if data.get('funding_basis') == 'budget' and building_specialty.budget_places <= 0:
             raise serializers.ValidationError('No budget places available for this specialty.')
         if data.get('funding_basis') == 'commercial' and building_specialty.commercial_places <= 0:
@@ -88,5 +106,3 @@ class LeaderboardSerializer(serializers.ModelSerializer):
         Возвращает место заявки в лидерборде (заполняется в view).
         """
         return getattr(obj, 'rank', None)
-
-
