@@ -11,8 +11,8 @@ RUN npm install
 COPY frontend/ .
 
 # Сборка фронтенда с переменной окружения
-ARG REACT_APP_API_URL=http://web:8000/api/
-ARG REACT_APP_MEDIA_URL=https://applicantcabinet.ru/
+ARG REACT_APP_API_URL=https://applicantcabinet.ru/api/
+ARG REACT_APP_MEDIA_URL=https://applicantcabinet.ru/media/
 RUN REACT_APP_API_URL=$REACT_APP_API_URL REACT_APP_MEDIA_URL=$REACT_APP_MEDIA_URL npm run build
 
 # Стадия продакшена

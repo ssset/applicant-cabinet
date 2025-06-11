@@ -37,7 +37,7 @@ import { useToast } from '@/components/ui/use-toast';
 import { userAPI } from '@/services/api';
 
 // Базовый URL бэкенда
-export const BASE_URL = 'http://127.0.0.1:8000/media/';
+export const BASE_URL = 'https://applicantcabinet.ru/media/';
 
 interface ApplicantProfileData {
     first_name: string;

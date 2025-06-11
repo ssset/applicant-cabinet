@@ -22,7 +22,8 @@ services:
       - net.ipv6.conf.all.disable_ipv6=1
       - net.ipv6.conf.default.disable_ipv6=1
     command: >
-      sh -c "python manage.py migrate &&
+      sh -c "until pg_isready -h db -p 5432; do sleep 1; done &&
+             python manage.py migrate &&
              gunicorn --bind 0.0.0.0:8000 applicant.wsgi:application"
     networks:
       - applicant_network
@@ -51,12 +52,13 @@ services:
     build:
       context: .
       dockerfile: frontend/Dockerfile.frontend
+      args:
+        REACT_APP_API_URL: https://applicantcabinet.ru/api/
+        REACT_APP_MEDIA_URL: https://applicantcabinet.ru/media/
     volumes:
       - frontend_build:/usr/share/nginx/html
     expose:
       - "80"
-    environment:
-      - REACT_APP_API_URL=http://web:8000/api/
     networks:
       - applicant_network
     dns:
@@ -68,9 +70,9 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     environment:
-      - POSTGRES_DB=${POSTGRES_DB}
-      - POSTGRES_USER=${POSTGRES_USER}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=applicant_db
+      - POSTGRES_USER=applicant_user
+      - POSTGRES_PASSWORD=your_secure_db_password
     env_file:
       - .env
     networks:
@@ -89,7 +91,7 @@ services:
       - ./nginx.conf:/etc/nginx/conf.d/default.conf
       - static_volume:/var/www/static
       - media_volume:/var/www/media
-      - frontend_build:/usr/share/nginx/html  # Исправлен путь
+      - frontend_build:/usr/share/nginx/html
       - /etc/letsencrypt:/etc/letsencrypt:ro
     ports:
       - "80:80"

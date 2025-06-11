@@ -4,7 +4,7 @@ import pytesseract
 import re
 
 # Путь к исполняемому файлу Tesseract
-pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
+#pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
 
 # Обновленный список предметов с дополнительными вариациями
 predmety = [
