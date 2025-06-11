@@ -21,6 +21,7 @@ import InstitutionsPage from '@/pages/InstitutionsPage';
 import LandingPage from '@/pages/LandingPage';
 import InstitutionsApplyPage from "@/pages/InstitutionsApplyPage";
 import LeaderboardPage from "@/pages/LeaderboardPage";
+import PaymentSuccessPage from "@/pages/PaymentSuccessPage";
 
 // Тип для ролей
 type UserRole = 'applicant' | 'moderator' | 'admin_app' | 'admin_org' | null;
@@ -124,6 +125,7 @@ const App = () => {
                                         </ProtectedRoute>
                                     }
                                 />
+                                <Route path="/payment-success" element={<PaymentSuccessPage />} />
                                 <Route
                                     path="/moderators"
                                     element={

@@ -1,6 +1,6 @@
 # users/urls.py
 from django.urls import path
-from .views import ApplicantProfileView, AdminAppCreationView, AdminOrgView, ModeratorView, CurrentUserView
+from .views import ApplicantProfileView, AdminAppCreationView, AdminOrgView, ModeratorView, CurrentUserView, TaskStatusView
 
 urlpatterns = [
     path('profile/', ApplicantProfileView.as_view(), name='applicant-profile'),
@@ -9,4 +9,5 @@ urlpatterns = [
     path('admin-org/<int:id>/', AdminOrgView.as_view(), name='admin-org-detail'),  # Новый маршрут для DELETE
     path('moderators/', ModeratorView.as_view(), name='moderators'),
     path('me/', CurrentUserView.as_view(), name='current-user'),
+    path('task-status/', TaskStatusView.as_view(), name='task-status'),
 ]

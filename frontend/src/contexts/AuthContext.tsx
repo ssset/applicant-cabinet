@@ -1,5 +1,5 @@
 // src/contexts/AuthContext.tsx
-import React, { createContext, useState, useEffect, useContext } from 'react'; // Добавляем useContext
+import React, { createContext, useState, useEffect, useContext } from 'react';
 import { authAPI, userAPI } from '../services/api';
 import { useToast } from '@/components/ui/use-toast';
 
@@ -26,37 +26,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   useEffect(() => {
     const checkAuth = async () => {
-      try {
-        const token = localStorage.getItem('access_token');
-        const storedEmail = localStorage.getItem('user_email'); // Новое: читаем email
-        const role = localStorage.getItem('user_role');
+      const token = localStorage.getItem('access_token');
 
-        if (token) {
-          // Запрашиваем полные данные пользователя через /users/me/
-          const userData = await userAPI.getCurrentUser();
-          console.log('Fetched user data:', userData); // Отладка
-          setUser({
-            id: userData.id,
-            email: userData.email,
-            role: userData.role,
-          });
-          // Сохраняем email в localStorage
-          localStorage.setItem('user_email', userData.email);
-        } else if (storedEmail && role) {
-          // Если токена нет, но есть email и role, используем их
-          setUser({
-            email: storedEmail,
-            role: role as 'applicant' | 'moderator' | 'admin_app' | 'admin_org',
-          });
-        } else {
-          setUser(null);
-        }
+      if (!token) {
+        setLoading(false);
+        return;
+      }
+
+      try {
+        // Запрашиваем полные данные пользователя
+        const userData = await userAPI.getCurrentUser();
+        setUser({
+          id: userData.id,
+          email: userData.email,
+          role: userData.role,
+        });
+        localStorage.setItem('user_email', userData.email);
       } catch (error) {
         console.error('Error checking authentication:', error);
         localStorage.removeItem('access_token');
         localStorage.removeItem('user_role');
         localStorage.removeItem('user_email');
-        setUser(null);
       } finally {
         setLoading(false);
       }
@@ -72,11 +62,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       localStorage.setItem('access_token', data.access);
       localStorage.setItem('user_role', data.role);
-      localStorage.setItem('user_email', email); // Сохраняем email из формы логина
+      localStorage.setItem('user_email', email);
 
-      // Запрашиваем полные данные пользователя
+      // Получаем актуальные данные пользователя
       const userData = await userAPI.getCurrentUser();
-      console.log('Fetched user data after login:', userData);
       setUser({
         id: userData.id,
         email: userData.email,
@@ -103,7 +92,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const signOut = () => {
     localStorage.removeItem('access_token');
     localStorage.removeItem('user_role');
-    localStorage.removeItem('user_email'); // Удаляем email
+    localStorage.removeItem('user_email');
     setUser(null);
     toast({
       title: 'Выход из системы',
@@ -112,13 +101,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   return (
-      <AuthContext.Provider value={{ user, loading, signIn, signOut, isAuthenticated: !!user }}>
-        {loading ? <div className="flex justify-center items-center h-screen">Загрузка...</div> : children}
+      <AuthContext.Provider value={{
+        user,
+        loading,
+        signIn,
+        signOut,
+        isAuthenticated: !!user
+      }}>
+        {children}
       </AuthContext.Provider>
   );
 };
 
-// Добавляем хук useAuth
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (context === null) {

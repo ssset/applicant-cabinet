@@ -6,9 +6,9 @@ from org.serializers import OrganizationSerializer
 
 
 class ApplicantProfileSerializer(serializers.ModelSerializer):
-    """
-    Сериализатор для профиля абитуриента.
-    """
+    photo = serializers.ImageField(use_url=False)
+    attestation_photo = serializers.ImageField(use_url=False)
+
     class Meta:
         model = ApplicantProfile
         fields = [
@@ -21,9 +21,10 @@ class ApplicantProfileSerializer(serializers.ModelSerializer):
             'average_grade', 'calculated_average_grade',
             'foreign_languages', 'attestation_photo', 'additional_info',
             'mother_full_name', 'mother_workplace', 'mother_phone',
-            'father_full_name', 'father_workplace', 'father_phone'
+            'father_full_name', 'father_workplace', 'father_phone',
+            'task_id'  # Добавляем task_id
         ]
-        read_only_fields = ['calculated_average_grade']  # Поле только для чтения
+        read_only_fields = ['task_id']
 
     def validate_foreign_languages(self, value):
         if value and not isinstance(value, list):
@@ -56,4 +57,4 @@ class CustomUserSerializer(serializers.ModelSerializer):
     class Meta:
         model = CustomUser
         fields = ['email', 'role', 'is_verified', 'consent_to_data_processing']
-        read_only_fields = ['role', 'is_verified']  # Поля, которые нельзя изменять через PATCH
+        read_only_fields = ['role', 'is_verified']

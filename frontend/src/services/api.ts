@@ -151,6 +151,12 @@ export const userAPI = {
         const response = await api.put('/users/me/password/', data);
         return response.data;
     },
+    getTaskStatus: async (taskId: string) => {
+        const response = await api.get('/users/task-status/', {
+            params: { task_id: taskId },
+        });
+        return response.data;
+    },
 };
 
 export const applicationAPI = {

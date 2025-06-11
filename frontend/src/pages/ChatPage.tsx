@@ -71,7 +71,7 @@ const ChatPage = () => {
     }
 
     // Проверка поддерживаемых ролей
-    const supportedRoles = ['moderator', 'admin_org', 'applicant']; // Убрали 'admin', так как используется 'admin_org'
+    const supportedRoles = ['moderator', 'admin_org', 'applicant'];
     if (!supportedRoles.includes(user.role)) {
         return (
             <SidebarProvider defaultOpen>

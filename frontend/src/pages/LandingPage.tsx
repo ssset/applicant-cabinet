@@ -212,26 +212,6 @@ const LandingPage: React.FC = () => {
                                     </ul>
                                 </div>
                                 <div>
-                                    <h4 className="text-lg font-semibold mb-4">Компания</h4>
-                                    <ul className="space-y-2">
-                                        <li>
-                                            <Link to="#" className="text-gray-400 hover:text-white transition-colors">
-                                                О нас
-                                            </Link>
-                                        </li>
-                                        <li>
-                                            <Link to="#" className="text-gray-400 hover:text-white transition-colors">
-                                                Контакты
-                                            </Link>
-                                        </li>
-                                        <li>
-                                            <Link to="#" className="text-gray-400 hover:text-white transition-colors">
-                                                Карьера
-                                            </Link>
-                                        </li>
-                                    </ul>
-                                </div>
-                                <div>
                                     <h4 className="text-lg font-semibold mb-4">Правовая информация</h4>
                                     <ul className="space-y-2">
                                         <li>

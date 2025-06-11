@@ -1,4 +1,6 @@
 amqp==5.3.1
+factory-boy==3.3.1
+Faker==30.3.0
 asgiref==3.8.1
 attrs==25.1.0
 billiard==4.2.1
@@ -43,7 +45,6 @@ pluggy==1.5.0
 prompt_toolkit==3.0.50
 proto-plus==1.26.1
 protobuf==5.29.4
-psycopg2==2.9.10
 psycopg2-binary==2.9.9
 pyasn1==0.6.1
 pyasn1_modules==0.4.2
@@ -56,6 +57,7 @@ python-dateutil==2.9.0.post0
 python-decouple==3.8
 python-dotenv==1.1.0
 PyYAML==6.0.2
+gunicorn==20.1.0
 redis==5.0.1
 referencing==0.36.2
 requests==2.32.3

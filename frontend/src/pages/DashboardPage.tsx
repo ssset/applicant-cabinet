@@ -1,5 +1,3 @@
-
-// src/pages/DashboardPage.tsx
 import { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -37,7 +35,7 @@ import { DashboardSidebar } from '@/components/dashboard/DashboardSidebar';
 import { useToast } from '@/hooks/use-toast';
 import { FileText, School, Users, Settings, Plus, Pencil, Trash2, UserPlus } from 'lucide-react';
 import { applicationAPI, messageAPI, institutionAPI, specialtyAPI, moderatorAPI, adminAPI } from '@/services/api';
-import { useIsMobile } from '@/hooks/use-mobile'; // Импортируем хук
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface Organization {
     id: number;
@@ -73,7 +71,7 @@ interface Application {
 const DashboardPage = () => {
     const { user } = useAuth();
     const { toast } = useToast();
-    const isMobile = useIsMobile(); // Определяем, мобильное ли устройство
+    const isMobile = useIsMobile();
     const [applications, setApplications] = useState<Application[]>([]);
     const [chats, setChats] = useState<any[]>([]);
     const [institutions, setInstitutions] = useState<any[]>([]);
@@ -464,11 +462,9 @@ const DashboardPage = () => {
     const AdminAppDashboard = () => {
         const { toast } = useToast();
 
-        // Состояние для формы создания/редактирования организации
         const [orgForm, setOrgForm] = useState({ id: null as number | null, name: '', email: '', phone: '', address: '' });
         const [isOrgDialogOpen, setIsOrgDialogOpen] = useState(false);
 
-        // Состояние для формы создания/редактирования администратора
         const [adminForm, setAdminForm] = useState({
             id: null as number | null,
             email: '',
@@ -477,7 +473,6 @@ const DashboardPage = () => {
         });
         const [isAdminDialogOpen, setIsAdminDialogOpen] = useState(false);
 
-        // Обработчики для организаций
         const handleCreateOrg = async () => {
             if (!orgForm.name || !orgForm.email || !orgForm.phone || !orgForm.address) {
                 toast({
@@ -561,7 +556,6 @@ const DashboardPage = () => {
             setIsOrgDialogOpen(true);
         };
 
-        // Обработчики для администраторов
         const handleCreateAdmin = async () => {
             if (!adminForm.email) {
                 toast({
@@ -879,33 +873,35 @@ const DashboardPage = () => {
                                 </Dialog>
                             </CardHeader>
                             <CardContent>
-                                <Table>
-                                    <TableHeader>
-                                        <TableRow>
-                                            <TableHead>Email</TableHead>
-                                            <TableHead>Организация</TableHead>
-                                            <TableHead className="text-right">Действия</TableHead>
-                                        </TableRow>
-                                    </TableHeader>
-                                    <TableBody>
-                                        {admins.map((admin) => (
-                                            <TableRow key={admin.id}>
-                                                <TableCell>{admin.email}</TableCell>
-                                                <TableCell>
-                                                    {institutions.find(org => org.id === admin.organization?.id)?.name || 'Не указана'}
-                                                </TableCell>
-                                                <TableCell className="text-right">
-                                                    <Button variant="ghost" size="sm" onClick={() => handleEditAdmin(admin)}>
-                                                        <Pencil className="h-4 w-4" />
-                                                    </Button>
-                                                    <Button variant="ghost" size="sm" onClick={() => handleDeleteAdmin(admin.id)}>
-                                                        <Trash2 className="h-4 w-4" />
-                                                    </Button>
-                                                </TableCell>
+                                <div className={`overflow-x-auto ${!isMobile ? 'max-h-96 overflow-y-auto' : ''}`}>
+                                    <Table>
+                                        <TableHeader>
+                                            <TableRow className="bg-muted/50">
+                                                <TableHead className="sticky top-0 bg-muted/50 min-w-[200px]">Email</TableHead>
+                                                <TableHead className="sticky top-0 bg-muted/50 min-w-[200px]">Организация</TableHead>
+                                                <TableHead className="sticky top-0 bg-muted/50 text-right min-w-[120px]">Действия</TableHead>
                                             </TableRow>
-                                        ))}
-                                    </TableBody>
-                                </Table>
+                                        </TableHeader>
+                                        <TableBody>
+                                            {admins.map((admin) => (
+                                                <TableRow key={admin.id} className="hover:bg-muted/50 transition-colors">
+                                                    <TableCell className="py-3">{admin.email}</TableCell>
+                                                    <TableCell className="py-3">
+                                                        {institutions.find(org => org.id === admin.organization?.id)?.name || 'Не указана'}
+                                                    </TableCell>
+                                                    <TableCell className="py-3 text-right">
+                                                        <Button variant="ghost" size="sm" onClick={() => handleEditAdmin(admin)}>
+                                                            <Pencil className="h-4 w-4" />
+                                                        </Button>
+                                                        <Button variant="ghost" size="sm" onClick={() => handleDeleteAdmin(admin.id)}>
+                                                            <Trash2 className="h-4 w-4" />
+                                                        </Button>
+                                                    </TableCell>
+                                                </TableRow>
+                                            ))}
+                                        </TableBody>
+                                    </Table>
+                                </div>
                             </CardContent>
                         </Card>
                     </motion.div>
@@ -914,7 +910,6 @@ const DashboardPage = () => {
         );
     };
 
-    // Выбор дашборда в зависимости от роли пользователя
     const renderDashboardByRole = () => {
         switch(user?.role) {
             case 'applicant':
@@ -933,9 +928,9 @@ const DashboardPage = () => {
     return (
         <div className="min-h-screen bg-gray-100 flex">
             <DashboardSidebar />
-            <div 
-                className={`flex-1 flex flex-col ${isMobile ? 'overflow-y-auto' : ''}`} // На мобильных включаем скролл
-                style={isMobile ? { height: '100vh' } : {}} // Устанавливаем высоту для скролла на мобильных
+            <div
+                className={`flex-1 flex flex-col ${isMobile ? 'overflow-y-auto' : ''}`}
+                style={isMobile ? { height: '100vh' } : {}}
             >
                 <div className="container mx-auto px-4 py-8">
                     <motion.h1

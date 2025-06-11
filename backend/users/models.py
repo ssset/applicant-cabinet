@@ -117,6 +117,7 @@ class ApplicantProfile(models.Model):
     father_full_name = models.CharField(max_length=100, blank=True, verbose_name='Father Full Name')
     father_workplace = models.CharField(max_length=100, blank=True, verbose_name='Father Workplace')
     father_phone = models.CharField(max_length=20, blank=True, verbose_name='Father Phone')
+    task_id = models.CharField(max_length=36, blank=True, null=True, verbose_name='Task ID')
 
     class Meta:
         verbose_name = 'Applicant Profile'

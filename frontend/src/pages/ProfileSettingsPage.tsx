@@ -7,19 +7,90 @@ import { ProfileForm } from '@/components/Settings/ProfileForm';
 import { PasswordForm } from '@/components/Settings/PasswordForm';
 import { useAuth } from '@/hooks/useAuth';
 import { userAPI } from '@/services/api';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useToast } from '@/components/ui/use-toast';
 
 const ProfileSettingsPage = () => {
     const { user, isLoading: isAuthLoading } = useAuth();
+    const { toast } = useToast();
+    const queryClient = useQueryClient();
     const [activeTab, setActiveTab] = useState('password');
+    const [taskId, setTaskId] = useState<string | null>(null);
+    const [isTaskPolling, setIsTaskPolling] = useState(false);
 
     // Запрос для получения профиля абитуриента
-    const { data: profile } = useQuery({
+    const { data: profile, isLoading: isProfileLoading } = useQuery({
         queryKey: ['applicantProfile'],
         queryFn: () => userAPI.getApplicantProfile(),
         enabled: user?.role === 'applicant',
-        retry: false, // Не повторять запрос при ошибке 404
+        retry: false,
+        onSuccess: (data) => {
+            console.log('Profile data loaded:', data);
+            // Если в профиле есть task_id и опрос ещё не запущен, начинаем опрос
+            if (data.task_id && !isTaskPolling) {
+                console.log('Setting taskId from profile:', data.task_id);
+                setTaskId(data.task_id);
+                setIsTaskPolling(true);
+            }
+        },
+        onError: (error) => {
+            console.error('Error loading profile:', error);
+        },
     });
+
+    // Опрос статуса задачи
+    useEffect(() => {
+        if (!taskId || !isTaskPolling) {
+            console.log('Polling skipped: taskId or isTaskPolling is false', { taskId, isTaskPolling });
+            return;
+        }
+
+        console.log('Starting task status polling for taskId:', taskId);
+        const pollTaskStatus = async () => {
+            try {
+                const { status, result } = await userAPI.getTaskStatus(taskId);
+                console.log('Task status response:', { taskId, status, result });
+
+                if (status === 'completed') {
+                    console.log('Task completed, updating profile with grade:', result);
+                    setIsTaskPolling(false);
+                    setTaskId(null);
+                    toast({
+                        title: 'Обработка завершена',
+                        description: `Средний балл аттестата: ${result}`,
+                    });
+                    // Инвалидируем запрос профиля, чтобы обновить calculated_average_grade
+                    queryClient.invalidateQueries({ queryKey: ['applicantProfile'] });
+                } else if (status === 'failed') {
+                    console.error('Task failed:', result.error);
+                    setIsTaskPolling(false);
+                    setTaskId(null);
+                    toast({
+                        variant: 'destructive',
+                        title: 'Ошибка обработки',
+                        description: result.error || 'Не удалось обработать изображение.',
+                    });
+                }
+            } catch (error: any) {
+                console.error('Error polling task status:', error);
+                setIsTaskPolling(false);
+                setTaskId(null);
+                toast({
+                    variant: 'destructive',
+                    title: 'Ошибка',
+                    description: error.message || 'Произошла ошибка при проверке статуса задачи.',
+                });
+            }
+        };
+
+        const intervalId = setInterval(pollTaskStatus, 3000);
+        console.log('Polling interval set for taskId:', taskId);
+
+        return () => {
+            console.log('Cleaning up polling interval for taskId:', taskId);
+            clearInterval(intervalId);
+        };
+    }, [taskId, isTaskPolling, toast, queryClient]);
 
     // Устанавливаем активную вкладку в зависимости от роли
     useEffect(() => {
@@ -28,8 +99,8 @@ const ProfileSettingsPage = () => {
         }
     }, [isAuthLoading, user]);
 
-    // Если данные пользователя еще загружаются
-    if (isAuthLoading) {
+    // Если данные пользователя или профиля загружаются
+    if (isAuthLoading || (user?.role === 'applicant' && isProfileLoading)) {
         return (
             <div className="flex h-screen overflow-hidden">
                 <DashboardSidebar />
@@ -90,7 +161,11 @@ const ProfileSettingsPage = () => {
                                 <CardContent className="pt-6 flex-1 overflow-y-auto">
                                     {isApplicant && (
                                         <TabsContent value="profile" className="m-0">
-                                            <ProfileForm profile={profile} />
+                                            <ProfileForm
+                                                profile={profile}
+                                                setTaskId={setTaskId}
+                                                setIsTaskPolling={setIsTaskPolling}
+                                            />
                                         </TabsContent>
                                     )}
                                     <TabsContent value="password" className="m-0">

@@ -16,13 +16,14 @@ from yookassa import Configuration, Payment
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
 from yookassa.domain.notification import WebhookNotification
+from django.template.loader import render_to_string
+from django.utils import timezone
 
 logger = logging.getLogger(__name__)
 
 # Настройка ЮKassa
 Configuration.account_id = settings.YUKASSA_SHOP_ID
 Configuration.secret_key = settings.YUKASSA_SECRET_KEY
-
 
 class PaymentWebhookView(APIView):
     @method_decorator(csrf_exempt)
@@ -33,34 +34,77 @@ class PaymentWebhookView(APIView):
                 payment = notification.object
                 metadata = payment.metadata
 
+                # Создание организации
+                organization_data = {
+                    'name': metadata.get('institution_name', 'Не указано'),
+                    'email': metadata.get('email', 'Не указано'),
+                    'phone': metadata.get('phone', ''),
+                    'address': metadata.get('address', ''),
+                    'city': metadata.get('city', ''),
+                    'website': metadata.get('website', ''),
+                    'description': metadata.get('description', '')
+                }
+                org_serializer = OrganizationSerializer(data=organization_data)
+                org_serializer.is_valid(raise_exception=True)
+                organization = org_serializer.save()
+
+                # Создание корпуса
+                building_data = {
+                    'organization': organization.id,
+                    'name': 'Главный корпус',
+                    'address': metadata.get('address', ''),
+                    'phone': metadata.get('phone', ''),
+                    'email': metadata.get('email', 'Не указано')
+                }
+                building_serializer = BuildingSerializer(data=building_data)
+                building_serializer.is_valid(raise_exception=True)
+                building = building_serializer.save()
+
                 admin_emails = CustomUser.objects.filter(role='admin_app').values_list('email', flat=True)
                 if not admin_emails:
-                    logger.error("No admin_app users found for payment notification")
+                    logger.error("Не найдено пользователей с ролью admin_app для уведомления об оплате")
                     return Response(status=status.HTTP_200_OK)
 
-                subject = "Успешная оплата регистрации организации"
+                # Рендеринг HTML-шаблона для письма
+                html_message = render_to_string('email/payment_success_email.html', {
+                    'logo_url': settings.LOGO_URL,  # Убедитесь, что это определено в настройках
+                    'organization_name': organization.name,
+                    'organization_email': organization.email,
+                    'amount_value': payment.amount.value,
+                    'amount_currency': payment.amount.currency,
+                    'payment_id': payment.id,
+                    'organization_address': organization.address,
+                    'organization_city': organization.city,
+                    'admin_url': f"{settings.FRONTEND_URL}/admin",  # URL панели администратора
+                    'support_url': settings.SUPPORT_URL,  # Убедитесь, что это определено
+                    'year': timezone.now().year,
+                })
+
+                subject = "Оплачена новая организация!"
                 message = (
-                    f"Получена оплата за регистрацию организации:\n\n"
-                    f"Название: {metadata.get('institution_name', 'Не указано')}\n"
-                    f"Email: {metadata.get('email', 'Не указано')}\n"
+                    f"Новая организация успешно оплатила регистрацию:\n\n"
+                    f"Название: {organization.name}\n"
+                    f"Email: {organization.email}\n"
                     f"Сумма: {payment.amount.value} {payment.amount.currency}\n"
-                    f"ID платежа: {payment.id}\n\n"
-                    f"Пожалуйста, создайте организацию в системе."
+                    f"ID платежа: {payment.id}\n"
+                    f"Адрес: {organization.address}\n"
+                    f"Город: {organization.city}\n\n"
+                    f"Свяжитесь с администрацией организации для уточнения деталей."
                 )
 
                 send_email_task.delay(
                     subject=subject,
                     message=message,
                     from_email=settings.DEFAULT_FROM_EMAIL,
-                    recipient_list=list(admin_emails)
+                    recipient_list=list(admin_emails),
+                    html_message=html_message
                 )
-                logger.info(f"Payment {payment.id} processed, notification sent to admins")
+                logger.info(f"Оплата {payment.id} обработана, организация создана, уведомления отправлены администраторам")
 
             return Response(status=status.HTTP_200_OK)
         except Exception as e:
-            logger.error(f"Error processing webhook: {str(e)}")
+            logger.error(f"Ошибка обработки вебхука: {str(e)}")
             return Response(status=status.HTTP_400_BAD_REQUEST)
-
 
 class PaymentView(APIView):
     permission_classes = []
@@ -74,22 +118,26 @@ class PaymentView(APIView):
             },
             "confirmation": {
                 "type": "redirect",
-                "return_url": request.data.get('return_url', 'http://localhost:3000/institutions-apply')
+                "return_url": request.data.get('return_url', 'http://localhost:3000/payment-success')
             },
             "capture": True,
             "description": "Оплата регистрации учебного заведения",
             "metadata": {
                 "institution_name": request.data.get('institutionName', ''),
-                "email": request.data.get('email', '')
+                "email": request.data.get('email', ''),
+                "phone": request.data.get('phone', ''),
+                "address": request.data.get('address', ''),
+                "city": request.data.get('city', ''),
+                "website": request.data.get('website', ''),
+                "description": request.data.get('description', '')
             }
         }, idempotence_key)
 
-        logger.info(f"Payment initiated: {payment.id} for {request.data.get('institutionName')}")
+        logger.info(f"Инициирована оплата: {payment.id} для {request.data.get('institutionName')}")
         return Response({
             "payment_url": payment.confirmation.confirmation_url,
             "payment_id": payment.id
         }, status=status.HTTP_200_OK)
-
 
 class OrganizationApplicationView(APIView):
     permission_classes = []
@@ -101,9 +149,9 @@ class OrganizationApplicationView(APIView):
 
         admin_emails = CustomUser.objects.filter(role='admin_app').values_list('email', flat=True)
         if not admin_emails:
-            logger.error("No admin_app users found for organization application")
+            logger.error("Не найдено пользователей с ролью admin_app для обработки заявки на организацию")
             return Response(
-                {"message": "No admin available to process the request"},
+                {"message": "Нет доступных администраторов для обработки запроса"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
@@ -126,13 +174,12 @@ class OrganizationApplicationView(APIView):
             from_email=settings.DEFAULT_FROM_EMAIL,
             recipient_list=list(admin_emails)
         )
-        logger.info(f"Email notification task queued for organization application: {data['name']}")
+        logger.info(f"Задача отправки email поставлена в очередь для заявки на организацию: {data['name']}")
 
         return Response(
             {"message": "Заявка успешно отправлена. Администратор свяжется с вами после проверки."},
             status=status.HTTP_200_OK
         )
-
 
 class OrganizationView(APIView):
     permission_classes = [IsAuthenticated, IsEmailVerified, IsAdminApp | IsAdminOrg]
@@ -141,17 +188,17 @@ class OrganizationView(APIView):
         cache_key = f"organizations_{request.user.role}_{request.user.id}"
         cached_data = cache.get(cache_key)
         if cached_data is not None:
-            logger.info(f"Cache hit for {cache_key}")
+            logger.info(f"Попадание в кэш для {cache_key}")
             return Response(cached_data, status=status.HTTP_200_OK)
 
         if request.user.role == 'admin_app':
             organizations = Organization.objects.all()
-            logger.info(f"AdminApp {request.user.email} retrieved all organizations with buildings")
+            logger.info(f"AdminApp {request.user.email} получил все организации с корпусами")
         elif request.user.role == 'admin_org' and request.user.organization:
             organizations = Organization.objects.filter(id=request.user.organization.id)
-            logger.info(f"AdminOrg {request.user.email} retrieved organization {request.user.organization.name}")
+            logger.info(f"AdminOrg {request.user.email} получил организацию {request.user.organization.name}")
         else:
-            raise ValidationError("User has no organization assigned or insufficient permissions")
+            raise ValidationError("У пользователя нет назначенной организации или недостаточно прав")
 
         serializer = OrganizationSerializer(organizations, many=True, context={'request': request})
         data = serializer.data
@@ -180,8 +227,7 @@ class OrganizationView(APIView):
         organization.delete()
         cache.delete("organizations_all")
         cache.delete_pattern("organizations_*")
-        return Response({'message': 'Organization deleted'}, status=status.HTTP_204_NO_CONTENT)
-
+        return Response({'message': 'Организация удалена'}, status=status.HTTP_204_NO_CONTENT)
 
 class BuildingView(APIView):
     permission_classes = [IsAuthenticated, IsEmailVerified, IsAdminOrg | IsAdminApp]
@@ -190,17 +236,17 @@ class BuildingView(APIView):
         cache_key = f"buildings_{request.user.role}_{request.user.id}"
         cached_data = cache.get(cache_key)
         if cached_data is not None:
-            logger.info(f"Cache hit for {cache_key}")
+            logger.info(f"Попадание в кэш для {cache_key}")
             return Response(cached_data, status=status.HTTP_200_OK)
 
         if request.user.role == 'admin_app':
             buildings = Building.objects.all()
-            logger.info(f"AdminApp {request.user.email} retrieved all buildings")
+            logger.info(f"AdminApp {request.user.email} получил все корпуса")
         elif request.user.organization:
             buildings = Building.objects.filter(organization=request.user.organization)
-            logger.info(f"Retrieved {len(buildings)} buildings for organization {request.user.organization.name}")
+            logger.info(f"Получено {len(buildings)} корпусов для организации {request.user.organization.name}")
         else:
-            raise ValidationError("User has no organization assigned or insufficient permissions")
+            raise ValidationError("У пользователя нет назначенной организации или недостаточно прав")
 
         serializer = BuildingSerializer(buildings, many=True)
         data = serializer.data
@@ -208,90 +254,89 @@ class BuildingView(APIView):
         return Response(data, status=status.HTTP_200_OK)
 
     def post(self, request):
-        logger.debug(f"BuildingView POST request data: {request.data}")
+        logger.debug(f"BuildingView POST запрос данные: {request.data}")
         serializer = BuildingSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         building = serializer.save()
 
-        subject = "New Building Created"
-        message = f"Building {building.name} created for {building.organization.name}. ID: {building.id}"
+        subject = "Создан новый корпус"
+        message = f"Корпус {building.name} создан для {building.organization.name}. ID: {building.id}"
         send_email_task.delay(
             subject=subject,
             message=message,
             from_email=settings.DEFAULT_FROM_EMAIL,
             recipient_list=[request.user.email]
         )
-        logger.info(f"Email notification task queued for building {building.name}")
+        logger.info(f"Задача отправки email поставлена в очередь для корпуса {building.name}")
 
-        logger.info(f"Building {building.name} created by {request.user.email}")
+        logger.info(f"Корпус {building.name} создан пользователем {request.user.email}")
         cache.delete_pattern("buildings_*")
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
     def patch(self, request):
         building_id = request.data.get('id')
         if not building_id:
-            raise ValidationError("Building ID is required")
+            raise ValidationError("ID корпуса обязателен")
 
         if request.user.role == 'admin_app':
             building = Building.objects.get(id=building_id)
         elif request.user.organization:
             building = Building.objects.get(id=building_id, organization=request.user.organization)
         else:
-            raise ValidationError("User has no organization assigned or insufficient permissions")
+            raise ValidationError("У пользователя нет назначенной организации или недостаточно прав")
 
         serializer = BuildingSerializer(building, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
         serializer.save()
-        logger.info(f"Building {building_id} updated by {request.user.email}")
+        logger.info(f"Корпус {building_id} обновлен пользователем {request.user.email}")
         cache.delete_pattern("buildings_*")
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     def delete(self, request):
         building_id = request.query_params.get('id')
         if not building_id:
-            raise ValidationError("Building ID is required")
+            raise ValidationError("ID корпуса обязателен")
 
         if request.user.role == 'admin_app':
             building = Building.objects.get(id=building_id)
         elif request.user.organization:
             building = Building.objects.get(id=building_id, organization=request.user.organization)
         else:
-            raise ValidationError("User has no organization assigned or insufficient permissions")
+            raise ValidationError("У пользователя нет назначенной организации или недостаточно прав")
 
         building.delete()
-        logger.info(f"Building {building_id} deleted by {request.user.email}")
+        logger.info(f"Корпус {building_id} удален пользователем {request.user.email}")
         cache.delete_pattern("buildings_*")
-        return Response({'message': 'Building deleted'}, status=status.HTTP_204_NO_CONTENT)
-
+        return Response({'message': 'Корпус удален'}, status=status.HTTP_204_NO_CONTENT)
 
 class SpecialtyView(APIView):
     permission_classes = [IsAuthenticated, IsEmailVerified, IsModerator | IsAdminOrg]
 
     def get(self, request):
         if not request.user.organization:
-            raise ValidationError("User has no organization assigned")
+            raise ValidationError("У пользователя нет назначенной организации")
 
         cache_key = f"specialties_org_{request.user.organization.id}"
         cached_data = cache.get(cache_key)
         if cached_data is not None:
-            logger.info(f"Cache hit for {cache_key}")
+            logger.info(f"Попадание в кэш для {cache_key}")
             return Response(cached_data, status=status.HTTP_200_OK)
 
         specialties = Specialty.objects.filter(organization=request.user.organization)
         serializer = SpecialtySerializer(specialties, many=True)
         data = serializer.data
         cache.set(cache_key, data, timeout=3600)
-        logger.info(f"Retrieved {len(specialties)} specialties for organization {request.user.organization.name}")
+        logger.info(f"Получено {len(specialties)} специальностей для организации {request.user.organization.name}")
         return Response(data, status=status.HTTP_200_OK)
 
     def post(self, request):
         if not request.user.is_authenticated:
-            raise ValidationError("Authentication required")
+            raise ValidationError("Требуется аутентификация")
 
         if not hasattr(request.user, 'organization') or not request.user.organization:
-            raise ValidationError("User has no organization assigned")
+            raise ValidationError("У пользователя нет назначенной организации")
 
-        logger.info(f"Request data: {request.data}")
+        logger.info(f"Данные запроса: {request.data}")
         data = request.data.copy()
         if 'organization' in data:
             data['organization_id'] = data.pop('organization')
@@ -299,80 +344,79 @@ class SpecialtyView(APIView):
         serializer = SpecialtySerializer(data=data)
         serializer.is_valid(raise_exception=True)
         specialty = serializer.save()
-        logger.info(f"Specialty {specialty.code} - {specialty.name} created by {request.user.email}")
+        logger.info(f"Специальность {specialty.code} - {specialty.name} создана пользователем {request.user.email}")
         cache.delete_pattern("specialties_*")
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
     def patch(self, request):
         if not request.user.organization:
-            raise ValidationError("User has no organization assigned")
+            raise ValidationError("У пользователя нет назначенной организации")
 
         specialty_id = request.data.get('id')
         if not specialty_id:
-            raise ValidationError("Specialty ID is required")
+            raise ValidationError("ID специальности обязателен")
         specialty = Specialty.objects.get(id=specialty_id, organization=request.user.organization)
         serializer = SpecialtySerializer(specialty, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
         serializer.save()
-        logger.info(f"Specialty {specialty_id} updated by {request.user.email}")
+        logger.info(f"Специальность {specialty_id} обновлена пользователем {request.user.email}")
         cache.delete_pattern("specialties_*")
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     def delete(self, request):
         if not request.user.organization:
-            raise ValidationError("User has no organization assigned")
+            raise ValidationError("У пользователя нет назначенной организации")
 
         specialty_id = request.query_params.get('id')
         if not specialty_id:
-            raise ValidationError("Specialty ID is required")
+            raise ValidationError("ID специальности обязателен")
         specialty = Specialty.objects.get(id=specialty_id, organization=request.user.organization)
         specialty.delete()
-        logger.info(f"Specialty {specialty_id} deleted by {request.user.email}")
+        logger.info(f"Специальность {specialty_id} удалена пользователем {request.user.email}")
         cache.delete_pattern("specialties_*")
-        return Response({'message': 'Specialty deleted'}, status=status.HTTP_204_NO_CONTENT)
-
+        return Response({'message': 'Специальность удалена'}, status=status.HTTP_204_NO_CONTENT)
 
 class BuildingSpecialtyView(APIView):
     permission_classes = [IsAuthenticated, IsEmailVerified, IsAdminOrg]
 
     def post(self, request):
         if not request.user.organization:
-            raise ValidationError("User has no organization assigned")
+            raise ValidationError("У пользователя нет назначенной организации")
 
         serializer = BuildingSpecialtySerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         building_specialty = serializer.save()
         logger.info(
-            f"Specialty {building_specialty.specialty.name} assigned to building {building_specialty.building.name} by {request.user.email}")
+            f"Специальность {building_specialty.specialty.name} назначена корпусу {building_specialty.building.name} пользователем {request.user.email}")
         cache.delete_pattern("leaderboard_*")
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
     def patch(self, request):
         if not request.user.organization:
-            raise ValidationError("User has no organization assigned")
+            raise ValidationError("У пользователя нет назначенной организации")
 
         building_specialty_id = request.data.get('id')
         if not building_specialty_id:
-            raise ValidationError("BuildingSpecialty ID is required")
+            raise ValidationError("ID BuildingSpecialty обязателен")
         building_specialty = BuildingSpecialty.objects.get(id=building_specialty_id,
                                                            building__organization=request.user.organization)
         serializer = BuildingSpecialtySerializer(building_specialty, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
         serializer.save()
-        logger.info(f"BuildingSpecialty {building_specialty_id} updated by {request.user.email}")
+        logger.info(f"BuildingSpecialty {building_specialty_id} обновлен пользователем {request.user.email}")
         cache.delete_pattern("leaderboard_*")
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     def delete(self, request):
         if not request.user.organization:
-            raise ValidationError("User has no organization assigned")
+            raise ValidationError("У пользователя нет назначенной организации")
 
         building_specialty_id = request.query_params.get('id')
         if not building_specialty_id:
-            raise ValidationError("BuildingSpecialty ID is required")
+            raise ValidationError("ID BuildingSpecialty обязателен")
         building_specialty = BuildingSpecialty.objects.get(id=building_specialty_id,
                                                            building__organization=request.user.organization)
         building_specialty.delete()
-        logger.info(f"BuildingSpecialty {building_specialty_id} deleted by {request.user.email}")
+        logger.info(f"BuildingSpecialty {building_specialty_id} удален пользователем {request.user.email}")
         cache.delete_pattern("leaderboard_*")
-        return Response({'message': 'BuildingSpecialty deleted'}, status=status.HTTP_204_NO_CONTENT)
+        return Response({'message': 'BuildingSpecialty удален'}, status=status.HTTP_204_NO_CONTENT)

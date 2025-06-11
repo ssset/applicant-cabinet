@@ -4,6 +4,7 @@ from rest_framework import status
 from django.urls import reverse
 from users.models import CustomUser
 
+
 class AuthTestCase(APITestCase):
     def setUp(self):
         self.register_url = reverse('register')

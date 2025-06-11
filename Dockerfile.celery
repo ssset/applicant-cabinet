@@ -1,8 +1,12 @@
 # Базовый образ Python
 FROM python:3.11-slim
 
-# Установка системных зависимостей
+# Установка системных зависимостей для psycopg2
 RUN apt-get update && apt-get install -y \
+    libpq-dev \
+    gcc \
+    iputils-ping \
+    net-tools \
     && rm -rf /var/lib/apt/lists/*
 
 # Установка рабочей директории

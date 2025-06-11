@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Send, Plus, Search } from 'lucide-react';
+import { Send, Plus, Search, Menu } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -49,6 +49,7 @@ export const ApplicantChatView = () => {
     const [newMessage, setNewMessage] = useState('');
     const [isNewChatDialogOpen, setIsNewChatDialogOpen] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
+    const [isChatListOpen, setIsChatListOpen] = useState(false);
     const { toast } = useToast();
     const queryClient = useQueryClient();
     const scrollRef = useRef<HTMLDivElement>(null);
@@ -97,6 +98,7 @@ export const ApplicantChatView = () => {
             queryClient.invalidateQueries({ queryKey: ['chats'] });
             setSelectedChatId(newChat.id);
             setIsNewChatDialogOpen(false);
+            setIsChatListOpen(false);
             toast({
                 title: 'Чат создан',
                 description: `Чат с ${newChat.organization_name} успешно создан`,
@@ -130,7 +132,6 @@ export const ApplicantChatView = () => {
         },
     });
 
-    // Функция для подсчёта непрочитанных сообщений
     const getUnreadCount = (chat: Chat) => {
         return chat.messages.filter(
             (msg) => msg.sender_role !== 'applicant' && new Date(msg.created_at) > new Date(chat.updated_at)
@@ -155,6 +156,7 @@ export const ApplicantChatView = () => {
 
     const handleSelectChat = (chatId: string) => {
         setSelectedChatId(chatId);
+        setIsChatListOpen(false);
     };
 
     const handleSelectInstitution = (organizationId: string) => {
@@ -162,6 +164,7 @@ export const ApplicantChatView = () => {
         if (existingChat) {
             setSelectedChatId(existingChat.id);
             setIsNewChatDialogOpen(false);
+            setIsChatListOpen(false);
         } else {
             createChatMutation.mutate(organizationId);
         }
@@ -194,33 +197,47 @@ export const ApplicantChatView = () => {
     return (
         <div className="flex h-[calc(100vh-150px)] gap-4">
             {/* Список чатов */}
-            <Card className="w-1/3 max-w-xs p-4 flex flex-col">
+            <Card
+                className={`w-1/3 max-w-xs p-4 flex flex-col md:block ${
+                    isChatListOpen ? 'block fixed top-0 left-0 h-full w-full z-50 bg-white' : 'hidden md:block'
+                }`}
+            >
                 <div className="flex items-center justify-between mb-4">
                     <h2 className="text-lg font-semibold">Чаты</h2>
-                    <Dialog open={isNewChatDialogOpen} onOpenChange={setIsNewChatDialogOpen}>
-                        <DialogTrigger asChild>
-                            <Button size="sm" variant="outline" className="gap-2">
-                                <Plus className="h-4 w-4" /> Новый чат
-                            </Button>
-                        </DialogTrigger>
-                        <DialogContent>
-                            <DialogHeader>
-                                <DialogTitle>Выберите учебное заведение</DialogTitle>
-                                <DialogDescription>
-                                    Выберите учебное заведение из списка для начала общения
-                                </DialogDescription>
-                            </DialogHeader>
-                            {isLoadingOrganizations ? (
-                                <div className="py-4 text-center text-gray-500">Загрузка...</div>
-                            ) : (
-                                <InstitutionSelector
-                                    institutions={availableOrganizations}
-                                    existingChats={chats.map((chat: Chat) => chat.organization.id)}
-                                    onSelect={handleSelectInstitution}
-                                />
-                            )}
-                        </DialogContent>
-                    </Dialog>
+                    <div className="flex items-center gap-2">
+                        <Dialog open={isNewChatDialogOpen} onOpenChange={setIsNewChatDialogOpen}>
+                            <DialogTrigger asChild>
+                                <Button size="sm" variant="outline" className="gap-2">
+                                    <Plus className="h-4 w-4" /> Новый чат
+                                </Button>
+                            </DialogTrigger>
+                            <DialogContent>
+                                <DialogHeader>
+                                    <DialogTitle>Выберите учебное заведение</DialogTitle>
+                                    <DialogDescription>
+                                        Выберите учебное заведение из списка для начала общения
+                                    </DialogDescription>
+                                </DialogHeader>
+                                {isLoadingOrganizations ? (
+                                    <div className="py-4 text-center text-gray-500">Загрузка...</div>
+                                ) : (
+                                    <InstitutionSelector
+                                        institutions={availableOrganizations}
+                                        existingChats={chats.map((chat: Chat) => chat.organization.id)}
+                                        onSelect={handleSelectInstitution}
+                                    />
+                                )}
+                            </DialogContent>
+                        </Dialog>
+                        <Button
+                            size="icon"
+                            variant="ghost"
+                            className="md:hidden"
+                            onClick={() => setIsChatListOpen(!isChatListOpen)}
+                        >
+                            <Menu className="h-5 w-5" />
+                        </Button>
+                    </div>
                 </div>
 
                 <div className="mb-4 relative">
@@ -280,6 +297,16 @@ export const ApplicantChatView = () => {
             <div className="flex-1 flex flex-col h-full">
                 {selectedChatId ? (
                     <>
+                        <div className="flex items-center mb-4 md:hidden">
+                            <Button
+                                size="icon"
+                                variant="ghost"
+                                onClick={() => setIsChatListOpen(!isChatListOpen)}
+                            >
+                                <Menu className="h-5 w-5" />
+                            </Button>
+                            <h2 className="text-lg font-semibold ml-2">{selectedChat?.organization_name}</h2>
+                        </div>
                         <Card className="flex-1 mb-4 p-4">
                             <ScrollArea className="h-[calc(100vh-350px)] pr-4" ref={scrollRef}>
                                 {isLoadingMessages ? (
@@ -327,12 +354,24 @@ export const ApplicantChatView = () => {
                         </div>
                     </>
                 ) : (
-                    <Card className="flex-1 flex items-center justify-center">
-                        <div className="text-center">
-                            <p className="text-xl font-semibold mb-2">Выберите чат для начала общения</p>
-                            <p className="text-muted-foreground">Список чатов отображён слева</p>
+                    <div className="flex-1 flex flex-col h-full">
+                        <div className="flex items-center mb-4 md:hidden">
+                            <Button
+                                size="icon"
+                                variant="ghost"
+                                onClick={() => setIsChatListOpen(!isChatListOpen)}
+                            >
+                                <Menu className="h-5 w-5" />
+                            </Button>
+                            <h2 className="text-lg font-semibold ml-2">Чаты</h2>
                         </div>
-                    </Card>
+                        <Card className="flex-1 flex items-center justify-center">
+                            <div className="text-center">
+                                <p className="text-xl font-semibold mb-2">Выберите чат для начала общения</p>
+                                <p className="text-muted-foreground">Нажмите на иконку меню, чтобы открыть список чатов</p>
+                            </div>
+                        </Card>
+                    </div>
                 )}
             </div>
         </div>

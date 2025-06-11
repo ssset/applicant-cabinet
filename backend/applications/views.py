@@ -115,6 +115,7 @@ class AvailableSpecialtiesView(APIView):
         logger.info(f"Retrieved {len(specialties)} specialties for {request.user.email} with city {city or 'all'}")
         return Response(data, status=status.HTTP_200_OK)
 
+
 class AvailableCitiesView(APIView):
     permission_classes = [IsAuthenticated, IsEmailVerified, IsApplicant]
 

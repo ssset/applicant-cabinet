@@ -47,6 +47,9 @@ const formSchema = z.object({
     address: z.string().min(5, {
         message: "Адрес должен содержать не менее 5 символов",
     }),
+    city: z.string().min(2, {
+        message: "Город должен содержать не менее 2 символов",
+    }), // Новое поле
     website: z.string().url({
         message: "Введите корректный URL сайта",
     }).optional().or(z.literal('')),
@@ -75,6 +78,7 @@ const InstitutionsApplyPage = () => {
             email: "",
             phone: "",
             address: "",
+            city: "", // Новое поле
             website: "",
             description: "",
             acceptTerms: false,
@@ -89,10 +93,15 @@ const InstitutionsApplyPage = () => {
             const paymentResponse = await institutionAPI.initiatePayment({
                 institutionName: values.institutionName,
                 email: values.email,
-                return_url: window.location.href,
+                phone: values.phone,
+                address: values.address,
+                city: values.city,
+                website: values.website,
+                description: values.description,
+                institutionType: values.institutionType,
+                return_url: 'https://applicantcabinet.ru/payment-success"', // Обновленный URL возврата
             });
 
-            // Перенаправляем на страницу оплаты
             window.location.href = paymentResponse.payment_url;
         } catch (error) {
             toast({
@@ -108,18 +117,10 @@ const InstitutionsApplyPage = () => {
         setIsSubmitting(true);
 
         try {
-            await institutionAPI.applyOrganization({
-                name: values.institutionName,
-                email: values.email,
-                phone: values.phone,
-                address: values.address,
-                website: values.website,
-                description: values.description,
-                institutionType: values.institutionType,
-            });
-
-            // Переходим к шагу оплаты
-            setCurrentStep(3);
+            // Проверяем валидацию второго шага
+            if (currentStep === 2) {
+                setCurrentStep(3); // Переходим к шагу оплаты
+            }
         } catch (error) {
             toast({
                 variant: "destructive",
@@ -312,6 +313,20 @@ const InstitutionsApplyPage = () => {
                                                     </FormItem>
                                                 )}
                                             />
+
+                                            <FormField
+                                                control={form.control}
+                                                name="city"
+                                                render={({ field }) => (
+                                                    <FormItem>
+                                                        <FormLabel>Город</FormLabel>
+                                                        <FormControl>
+                                                            <Input placeholder="Например, Москва" {...field} />
+                                                        </FormControl>
+                                                        <FormMessage />
+                                                    </FormItem>
+                                                )}
+                                            /> {/* Новое поле */}
 
                                             <FormField
                                                 control={form.control}

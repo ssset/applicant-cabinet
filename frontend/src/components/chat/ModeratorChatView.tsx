@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Send, Search } from 'lucide-react';
+import { Send, Search, Menu } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -34,6 +34,7 @@ export const ModeratorChatView = () => {
     const [selectedChatId, setSelectedChatId] = useState<string | null>(null);
     const [newMessage, setNewMessage] = useState('');
     const [searchTerm, setSearchTerm] = useState('');
+    const [isChatListOpen, setIsChatListOpen] = useState(false);
     const { toast } = useToast();
     const queryClient = useQueryClient();
     const scrollRef = useRef<HTMLDivElement>(null);
@@ -110,6 +111,7 @@ export const ModeratorChatView = () => {
 
     const handleSelectChat = (chatId: string) => {
         setSelectedChatId(chatId);
+        setIsChatListOpen(false);
     };
 
     useEffect(() => {
@@ -135,7 +137,23 @@ export const ModeratorChatView = () => {
     return (
         <div className="flex h-[calc(100vh-150px)] gap-4">
             {/* Список чатов */}
-            <Card className="w-1/3 max-w-xs p-4 flex flex-col">
+            <Card
+                className={`w-1/3 max-w-xs p-4 flex flex-col md:block ${
+                    isChatListOpen ? 'block fixed top-0 left-0 h-full w-full z-50 bg-white' : 'hidden md:block'
+                }`}
+            >
+                <div className="flex items-center justify-between mb-4">
+                    <h2 className="text-lg font-semibold">Чаты</h2>
+                    <Button
+                        size="icon"
+                        variant="ghost"
+                        className="md:hidden"
+                        onClick={() => setIsChatListOpen(!isChatListOpen)}
+                    >
+                        <Menu className="h-5 w-5" />
+                    </Button>
+                </div>
+
                 <div className="mb-4 relative">
                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
                     <Input
@@ -193,6 +211,16 @@ export const ModeratorChatView = () => {
             <div className="flex-1 flex flex-col h-full">
                 {selectedChatId ? (
                     <>
+                        <div className="flex items-center mb-4 md:hidden">
+                            <Button
+                                size="icon"
+                                variant="ghost"
+                                onClick={() => setIsChatListOpen(!isChatListOpen)}
+                            >
+                                <Menu className="h-5 w-5" />
+                            </Button>
+                            <h2 className="text-lg font-semibold ml-2">{selectedChat?.applicant_email}</h2>
+                        </div>
                         <Card className="flex-1 mb-4 p-4">
                             <ScrollArea className="h-[calc(100vh-350px)] pr-4" ref={scrollRef}>
                                 {isLoadingMessages ? (
@@ -243,7 +271,7 @@ export const ModeratorChatView = () => {
                     <Card className="flex-1 flex items-center justify-center">
                         <div className="text-center">
                             <p className="text-xl font-semibold mb-2">Выберите чат для начала общения</p>
-                            <p className="text-muted-foreground">Список чатов отображён слева</p>
+                            <p className="text-muted-foreground">Нажмите на иконку меню, чтобы открыть список чатов</p>
                         </div>
                     </Card>
                 )}

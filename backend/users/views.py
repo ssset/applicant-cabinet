@@ -11,6 +11,7 @@ from rest_framework.permissions import IsAuthenticated
 from org.models import Organization
 from applicant.tasks import process_attestation_image_task  # Импортируем задачу
 from django.core.cache import cache
+from celery.result import AsyncResult
 
 logger = logging.getLogger(__name__)
 
@@ -18,19 +19,22 @@ class ApplicantProfileView(APIView):
     permission_classes = [IsAuthenticated, IsEmailVerified, IsApplicant]
 
     def get(self, request):
-        # Проверяем, существует ли профиль
+        logger.debug(f"GET /api/users/profile/ for user {request.user.id}")
         profile = ApplicantProfile.objects.filter(user=request.user).first()
         if not profile:
-            # Если профиля нет, возвращаем пустой ответ с кодом 404
+            logger.info(f"No profile found for user {request.user.id}")
             return Response(
                 {"message": "Профиль абитуриента еще не создан"},
                 status=status.HTTP_404_NOT_FOUND
             )
         serializer = ApplicantProfileSerializer(profile)
+        logger.debug(f"Returning profile data for user {request.user.id}: {serializer.data}")
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     def post(self, request):
+        logger.debug(f"POST /api/users/profile/ for user {request.user.id}, data={request.data}")
         if ApplicantProfile.objects.filter(user=request.user).exists():
+            logger.error(f"Profile already exists for user {request.user.id}")
             raise ValidationError("Profile already exists")
 
         serializer = ApplicantProfileSerializer(data=request.data)
@@ -42,38 +46,37 @@ class ApplicantProfileView(APIView):
                 f"New attestation photo uploaded for user {request.user.id} "
                 f"(profile {profile.id}), path: {profile.attestation_photo.path}"
             )
-            # Запускаем задачу асинхронно
-            task = process_attestation_image_task.delay(profile.attestation_photo.path)
+            task = process_attestation_image_task.delay(profile.id, profile.attestation_photo.path)
             logger.info(f"Task {task.id} started for processing attestation photo for user {request.user.id}")
-            # Сохраняем ID задачи в профиле, чтобы можно было проверить результат позже
             profile.task_id = task.id
             profile.save()
         else:
             logger.info(f"No attestation photo in request for user {request.user.id}")
 
+        logger.debug(f"Created profile for user {request.user.id}: {serializer.data}")
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
     def patch(self, request):
+        logger.debug(f"PATCH /api/users/profile/ for user {request.user.id}, data={request.data}")
         profile = ApplicantProfile.objects.get(user=request.user)
         serializer = ApplicantProfileSerializer(profile, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
-        serializer.save()
+        profile = serializer.save()
 
         if 'attestation_photo' in request.FILES:
-            logger.info(
-                f"Attestation photo updated via PATCH for user {request.user.id} "
-                f"(profile {profile.id})"
-            )
-            # Запускаем задачу асинхронно
-            task = process_attestation_image_task.delay(profile.attestation_photo.path)
-            logger.info(f"Task {task.id} started for processing attestation photo for user {request.user.id}")
-            profile.task_id = task.id
+            logger.info(f"Attestation photo updated via PATCH for user {request.user.id} (profile {profile.id})")
+            task = process_attestation_image_task.delay(profile.id,
+                                                        profile.attestation_photo.path)  # Добавляем profile.id
+            profile.task_id = str(task.id)
             profile.save()
-        return Response(ApplicantProfileSerializer(profile).data, status=status.HTTP_200_OK)
 
+        logger.debug(f"Updated profile for user {request.user.id}: {serializer.data}")
+        return Response(ApplicantProfileSerializer(profile).data, status=status.HTTP_200_OK)
     def delete(self, request):
+        logger.debug(f"DELETE /api/users/profile/ for user {request.user.id}")
         profile = ApplicantProfile.objects.get(user=request.user)
         profile.delete()
+        logger.info(f"Profile deleted for user {request.user.id}")
         return Response({'message': 'Profile deleted'}, status=status.HTTP_204_NO_CONTENT)
 
 class AdminAppCreationView(APIView):
@@ -216,32 +219,35 @@ class TaskStatusView(APIView):
 
     def get(self, request):
         task_id = request.query_params.get('task_id')
+        logger.debug(f"GET /api/task-status/?task_id={task_id} for user {request.user.id}")
         if not task_id:
+            logger.error("Task ID is required")
             return Response({"error": "Task ID is required"}, status=status.HTTP_400_BAD_REQUEST)
 
         task = AsyncResult(task_id)
+        logger.debug(f"Task {task_id} state: {task.state}")
         if task.state == 'PENDING':
             response = {'status': 'pending'}
         elif task.state == 'SUCCESS':
             result = task.result
+            logger.debug(f"Task {task_id} result: {result}")
             if isinstance(result, dict) and "error" in result:
                 response = {'status': 'failed', 'error': result["error"]}
             else:
                 response = {'status': 'completed', 'result': result}
-                # Если это задача генерации статистики, сохраняем результат в кэш
-                if task.name == 'applicant.tasks.generate_system_stats_task':
-                    cache_key = f"system_stats_{timezone.now().date()}"
-                    cache.set(cache_key, result, timeout=86400)
-                    logger.info(f"System stats saved to cache with key {cache_key}")
-                # Если это задача обработки аттестата, обновляем профиль
-                elif task.name == 'applicant.tasks.process_attestation_image_task':
-                    profile = request.user.applicantprofile
-                    profile.calculated_average_grade = result
-                    profile.task_id = None
-                    profile.save()
-                    logger.info(f"Updated profile for user {request.user.id} with average grade {result}")
+                if task.name == 'applicant.tasks.process_attestation_image_task':
+                    try:
+                        profile = request.user.applicantprofile
+                        profile.calculated_average_grade = result
+                        print(result, "ВОТ РЕЗУЛЬТААААААААААААААААААААААААААААААААААААААААААААААААААААААААААААААААААААААААТ")
+                        profile.task_id = None
+                        profile.save()
+                        logger.info(f"Updated profile for user {request.user.id} with average grade {result}")
+                    except Exception as e:
+                        logger.error(f"Failed to update profile for user {request.user.id}: {str(e)}", exc_info=True)
         else:
             response = {'status': 'failed', 'error': str(task.result)}
+            logger.error(f"Task {task_id} failed: {str(task.result)}")
 
         logger.info(f"Task {task_id} status checked: {response}")
         return Response(response, status=status.HTTP_200_OK)

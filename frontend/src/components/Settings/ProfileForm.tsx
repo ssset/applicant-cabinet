@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -37,7 +37,7 @@ import { useToast } from '@/components/ui/use-toast';
 import { userAPI } from '@/services/api';
 
 // Базовый URL бэкенда
-const BASE_URL = 'http://localhost:8000';
+export const BASE_URL = 'http://127.0.0.1:8000/media/';
 
 interface ApplicantProfileData {
     first_name: string;
@@ -72,6 +72,7 @@ interface ApplicantProfileData {
     father_phone: string;
     photo?: string;
     attestation_photo?: string;
+    task_id?: string;
 }
 
 const profileSchema = z.object({
@@ -90,7 +91,7 @@ const profileSchema = z.object({
     registration_address: z.string().min(5, 'Адрес регистрации должен содержать минимум 5 символов'),
     actual_address: z.string().min(5, 'Фактический адрес должен содержать минимум 5 символов'),
     phone: z.string().min(10, 'Введите корректный номер телефона'),
-    education_type: z.string().min(2, 'Тип образования обязателен'),
+    education_type: z.string().min(2, 'Тип обучения обязателен'),
     education_institution: z.string().min(2, 'Укажите учебное заведение'),
     graduation_year: z.string().regex(/^\d{4}$/, 'Введите корректный год выпуска'),
     document_type: z.string().min(2, 'Тип документа обязателен'),
@@ -131,7 +132,14 @@ const profileSchema = z.object({
 
 type ProfileFormValues = z.infer<typeof profileSchema>;
 
-export const ProfileForm: React.FC<{ profile?: ApplicantProfileData }> = ({ profile }) => {
+interface ProfileFormProps {
+    profile?: ApplicantProfileData;
+    setTaskId: React.Dispatch<React.SetStateAction<string | null>>;
+    setIsTaskPolling: React.Dispatch<React.SetStateAction<boolean>>;
+    isTaskPolling: boolean; // Добавляем isTaskPolling как пропс
+}
+
+export const ProfileForm: React.FC<ProfileFormProps> = ({ profile, setTaskId, setIsTaskPolling, isTaskPolling }) => {
     const queryClient = useQueryClient();
     const { toast } = useToast();
 
@@ -143,44 +151,93 @@ export const ProfileForm: React.FC<{ profile?: ApplicantProfileData }> = ({ prof
     const form = useForm<ProfileFormValues>({
         resolver: zodResolver(profileSchema),
         defaultValues: {
-            email: userData?.email || '',
-            first_name: profile?.first_name || '',
-            last_name: profile?.last_name || '',
-            middle_name: profile?.middle_name || '',
-            date_of_birth: profile?.date_of_birth ? new Date(profile.date_of_birth) : undefined,
-            citizenship: profile?.citizenship || '',
-            birth_place: profile?.birth_place || '',
-            passport_series: profile?.passport_series || '',
-            passport_number: profile?.passport_number || '',
-            passport_issued_date: profile?.passport_issued_date ? new Date(profile.passport_issued_date) : undefined,
-            passport_issued_by: profile?.passport_issued_by || '',
-            snils: profile?.snils || '',
-            registration_address: profile?.registration_address || '',
-            actual_address: profile?.actual_address || '',
-            phone: profile?.phone || '',
-            education_type: profile?.education_type || '',
-            education_institution: profile?.education_institution || '',
-            graduation_year: profile?.graduation_year ? profile.graduation_year.toString() : '',
-            document_type: profile?.document_type || '',
-            document_series: profile?.document_series || '',
-            document_number: profile?.document_number || '',
-            average_grade: profile?.average_grade ?? undefined,
-            calculated_average_grade: profile?.calculated_average_grade ?? undefined,
-            foreign_languages: profile?.foreign_languages ? profile.foreign_languages.join(', ') : '',
-            additional_info: profile?.additional_info || '',
-            mother_full_name: profile?.mother_full_name || '',
-            mother_workplace: profile?.mother_workplace || '',
-            mother_phone: profile?.mother_phone || '',
-            father_full_name: profile?.father_full_name || '',
-            father_workplace: profile?.father_workplace || '',
-            father_phone: profile?.father_phone || '',
+            email: '',
+            first_name: '',
+            last_name: '',
+            middle_name: '',
+            date_of_birth: undefined,
+            citizenship: '',
+            birth_place: '',
+            passport_series: '',
+            passport_number: '',
+            passport_issued_date: undefined,
+            passport_issued_by: '',
+            snils: '',
+            registration_address: '',
+            actual_address: '',
+            phone: '',
+            education_type: '',
+            education_institution: '',
+            graduation_year: '',
+            document_type: '',
+            document_series: '',
+            document_number: '',
+            average_grade: undefined,
+            calculated_average_grade: undefined,
+            foreign_languages: '',
+            additional_info: '',
+            mother_full_name: '',
+            mother_workplace: '',
+            mother_phone: '',
+            father_full_name: '',
+            father_workplace: '',
+            father_phone: '',
             photo: null,
             attestation_photo: null,
         },
     });
 
     useEffect(() => {
+        console.log('ProfileForm: profile changed:', profile);
+        console.log('ProfileForm: userData:', userData);
+        if (profile) {
+            console.log('ProfileForm: resetting form with profile:', profile);
+            form.reset({
+                email: userData?.email || '',
+                first_name: profile.first_name || '',
+                last_name: profile.last_name || '',
+                middle_name: profile.middle_name || '',
+                date_of_birth: profile.date_of_birth ? new Date(profile.date_of_birth) : undefined,
+                citizenship: profile.citizenship || '',
+                birth_place: profile.birth_place || '',
+                passport_series: profile.passport_series || '',
+                passport_number: profile.passport_number || '',
+                passport_issued_date: profile.passport_issued_date ? new Date(profile.passport_issued_date) : undefined,
+                passport_issued_by: profile.passport_issued_by || '',
+                snils: profile.snils || '',
+                registration_address: profile.registration_address || '',
+                actual_address: profile.actual_address || '',
+                phone: profile.phone || '',
+                education_type: profile.education_type || '',
+                education_institution: profile.education_institution || '',
+                graduation_year: profile.graduation_year ? profile.graduation_year.toString() : '',
+                document_type: profile.document_type || '',
+                document_series: profile.document_series || '',
+                document_number: profile.document_number || '',
+                average_grade: profile.average_grade ?? undefined,
+                calculated_average_grade: profile.calculated_average_grade ?? undefined,
+                foreign_languages: profile.foreign_languages ? profile.foreign_languages.join(', ') : '',
+                additional_info: profile.additional_info || '',
+                mother_full_name: profile.mother_full_name || '',
+                mother_workplace: profile.mother_workplace || '',
+                mother_phone: profile.mother_phone || '',
+                father_full_name: profile.father_full_name || '',
+                father_workplace: profile.father_workplace || '',
+                father_phone: profile.father_phone || '',
+                photo: null,
+                attestation_photo: null,
+            });
+            if (profile.task_id && !isTaskPolling) {
+                setTaskId(profile.task_id);
+                setIsTaskPolling(true);
+            }
+        }
+    }, [profile, userData, form]);
+
+
+    useEffect(() => {
         if (userData) {
+            console.log('ProfileForm: userData changed:', userData);
             form.setValue('email', userData.email || '');
         }
     }, [userData, form]);
@@ -200,7 +257,15 @@ export const ProfileForm: React.FC<{ profile?: ApplicantProfileData }> = ({ prof
     });
 
     const createProfileMutation = useMutation({
-        mutationFn: (data: FormData) => userAPI.createApplicantProfile(data),
+        mutationFn: async (data: FormData) => {
+            const response = await userAPI.createApplicantProfile(data);
+            if (response.task_id) {
+                console.log('Setting taskId from create response:', response.task_id);
+                setTaskId(response.task_id);
+                setIsTaskPolling(true);
+            }
+            return response;
+        },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['applicantProfile'] });
             form.setValue('photo', null);
@@ -220,7 +285,15 @@ export const ProfileForm: React.FC<{ profile?: ApplicantProfileData }> = ({ prof
     });
 
     const updateProfileMutation = useMutation({
-        mutationFn: (data: FormData) => userAPI.updateApplicantProfile(data),
+        mutationFn: async (data: FormData) => {
+            const response = await userAPI.updateApplicantProfile(data);
+            if (response.task_id) {
+                console.log('Setting taskId from update response:', response.task_id);
+                setTaskId(response.task_id);
+                setIsTaskPolling(true);
+            }
+            return response;
+        },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['applicantProfile'] });
             form.setValue('photo', null);
@@ -265,7 +338,7 @@ export const ProfileForm: React.FC<{ profile?: ApplicantProfileData }> = ({ prof
         formDataToSend.append('document_number', data.document_number);
         if (data.average_grade !== undefined) formDataToSend.append('average_grade', data.average_grade.toString());
         if (data.foreign_languages) {
-            const languages = data.foreign_languages.split(',').map((lang) => lang.trim());
+            const languages = data.foreign_languages.split(', ').map((lang) => lang.trim());
             formDataToSend.append('foreign_languages', JSON.stringify(languages));
         }
         if (data.additional_info) formDataToSend.append('additional_info', data.additional_info);
@@ -287,8 +360,14 @@ export const ProfileForm: React.FC<{ profile?: ApplicantProfileData }> = ({ prof
     };
 
     const getFullImageUrl = (path?: string) => {
-        if (!path) return null;
-        return path.startsWith('http') ? path : `${BASE_URL}${path}`;
+        console.log('getFullImageUrl called with path:', path);
+        if (!path || typeof path !== 'string' || path === '') {
+            console.error('Path is invalid (undefined, null, empty, or not a string)');
+            return null;
+        }
+        const fullUrl = path.startsWith('https') ? path : `${BASE_URL}${path}`;
+        console.log('Formed image URL:', fullUrl);
+        return fullUrl;
     };
 
     if (isUserLoading) {
@@ -307,7 +386,7 @@ export const ProfileForm: React.FC<{ profile?: ApplicantProfileData }> = ({ prof
                             name="email"
                             render={({ field }) => (
                                 <FormItem>
-                                    <FormLabel>Email *</FormLabel>
+                                    <FormLabel>Email</FormLabel>
                                     <FormControl>
                                         <div className="flex items-center">
                                             <Mail className="mr-2 h-4 w-4 opacity-70" />
@@ -323,7 +402,7 @@ export const ProfileForm: React.FC<{ profile?: ApplicantProfileData }> = ({ prof
                             name="phone"
                             render={({ field }) => (
                                 <FormItem>
-                                    <FormLabel>Телефон *</FormLabel>
+                                    <FormLabel>Телефон</FormLabel>
                                     <FormControl>
                                         <div className="flex items-center">
                                             <Phone className="mr-2 h-4 w-4 opacity-70" />
@@ -346,7 +425,7 @@ export const ProfileForm: React.FC<{ profile?: ApplicantProfileData }> = ({ prof
                             name="last_name"
                             render={({ field }) => (
                                 <FormItem>
-                                    <FormLabel>Фамилия *</FormLabel>
+                                    <FormLabel>Фамилия</FormLabel>
                                     <FormControl>
                                         <div className="flex items-center">
                                             <User className="mr-2 h-4 w-4 opacity-70" />
@@ -362,7 +441,7 @@ export const ProfileForm: React.FC<{ profile?: ApplicantProfileData }> = ({ prof
                             name="first_name"
                             render={({ field }) => (
                                 <FormItem>
-                                    <FormLabel>Имя *</FormLabel>
+                                    <FormLabel>Имя</FormLabel>
                                     <FormControl>
                                         <div className="flex items-center">
                                             <User className="mr-2 h-4 w-4 opacity-70" />
@@ -394,7 +473,7 @@ export const ProfileForm: React.FC<{ profile?: ApplicantProfileData }> = ({ prof
                             name="date_of_birth"
                             render={({ field }) => (
                                 <FormItem className="flex flex-col">
-                                    <FormLabel>Дата рождения *</FormLabel>
+                                    <FormLabel>Дата рождения</FormLabel>
                                     <Popover>
                                         <PopoverTrigger asChild>
                                             <FormControl>
@@ -432,7 +511,7 @@ export const ProfileForm: React.FC<{ profile?: ApplicantProfileData }> = ({ prof
                             name="citizenship"
                             render={({ field }) => (
                                 <FormItem>
-                                    <FormLabel>Гражданство *</FormLabel>
+                                    <FormLabel>Гражданство</FormLabel>
                                     <FormControl>
                                         <div className="flex items-center">
                                             <User className="mr-2 h-4 w-4 opacity-70" />
@@ -448,7 +527,7 @@ export const ProfileForm: React.FC<{ profile?: ApplicantProfileData }> = ({ prof
                             name="birth_place"
                             render={({ field }) => (
                                 <FormItem>
-                                    <FormLabel>Место рождения *</FormLabel>
+                                    <FormLabel>Место рождения</FormLabel>
                                     <FormControl>
                                         <div className="flex items-center">
                                             <MapPin className="mr-2 h-4 w-4 opacity-70" />
@@ -472,14 +551,15 @@ export const ProfileForm: React.FC<{ profile?: ApplicantProfileData }> = ({ prof
                             render={({ field: { onChange, value, ...field } }) => (
                                 <FormItem>
                                     <FormLabel>Фото профиля</FormLabel>
-                                    {profile?.photo && !value ? (
+                                    {profile?.photo && typeof profile.photo === 'string' && profile.photo !== '' && !value ? (
                                         <div className="mt-2">
                                             <img
                                                 src={getFullImageUrl(profile.photo)}
                                                 alt="Фото профиля"
                                                 className="w-48 h-48 object-cover rounded-md border border-gray-200"
                                                 onError={(e) => {
-                                                    e.currentTarget.src = '/placeholder-user.jpg';
+                                                    console.error('Image load error for photo:', profile.photo);
+                                                    e.currentTarget.src = `http://127.0.0.1:8000/media/${profile.photo}`;
                                                     e.currentTarget.onerror = null;
                                                 }}
                                             />
@@ -512,14 +592,15 @@ export const ProfileForm: React.FC<{ profile?: ApplicantProfileData }> = ({ prof
                             render={({ field: { onChange, value, ...field } }) => (
                                 <FormItem>
                                     <FormLabel>Фото аттестата</FormLabel>
-                                    {profile?.attestation_photo && !value ? (
+                                    {profile?.attestation_photo && typeof profile.attestation_photo === 'string' && profile.attestation_photo !== '' && !value ? (
                                         <div className="mt-2">
                                             <img
                                                 src={getFullImageUrl(profile.attestation_photo)}
                                                 alt="Фото аттестата"
                                                 className="w-48 h-48 object-cover rounded-md border border-gray-200"
                                                 onError={(e) => {
-                                                    e.currentTarget.src = '/placeholder-attestation.jpg';
+                                                    console.error('Image load error for attestation_photo:', profile.attestation_photo);
+                                                    e.currentTarget.src = `http://127.0.0.1:8000/media/${profile.attestation_photo}`;
                                                     e.currentTarget.onerror = null;
                                                 }}
                                             />
@@ -558,7 +639,7 @@ export const ProfileForm: React.FC<{ profile?: ApplicantProfileData }> = ({ prof
                             name="passport_series"
                             render={({ field }) => (
                                 <FormItem>
-                                    <FormLabel>Серия паспорта *</FormLabel>
+                                    <FormLabel>Серия паспорта</FormLabel>
                                     <FormControl>
                                         <div className="flex items-center">
                                             <FileText className="mr-2 h-4 w-4 opacity-70" />
@@ -574,7 +655,7 @@ export const ProfileForm: React.FC<{ profile?: ApplicantProfileData }> = ({ prof
                             name="passport_number"
                             render={({ field }) => (
                                 <FormItem>
-                                    <FormLabel>Номер паспорта *</FormLabel>
+                                    <FormLabel>Номер паспорта</FormLabel>
                                     <FormControl>
                                         <div className="flex items-center">
                                             <FileText className="mr-2 h-4 w-4 opacity-70" />
@@ -590,7 +671,7 @@ export const ProfileForm: React.FC<{ profile?: ApplicantProfileData }> = ({ prof
                             name="passport_issued_date"
                             render={({ field }) => (
                                 <FormItem className="flex flex-col">
-                                    <FormLabel>Дата выдачи *</FormLabel>
+                                    <FormLabel>Дата выдачи</FormLabel>
                                     <Popover>
                                         <PopoverTrigger asChild>
                                             <FormControl>
@@ -628,7 +709,7 @@ export const ProfileForm: React.FC<{ profile?: ApplicantProfileData }> = ({ prof
                             name="passport_issued_by"
                             render={({ field }) => (
                                 <FormItem>
-                                    <FormLabel>Кем выдан *</FormLabel>
+                                    <FormLabel>Кем выдан</FormLabel>
                                     <FormControl>
                                         <div className="flex items-center">
                                             <FileText className="mr-2 h-4 w-4 opacity-70" />
@@ -644,7 +725,7 @@ export const ProfileForm: React.FC<{ profile?: ApplicantProfileData }> = ({ prof
                             name="snils"
                             render={({ field }) => (
                                 <FormItem>
-                                    <FormLabel>СНИЛС *</FormLabel>
+                                    <FormLabel>СНИЛС</FormLabel>
                                     <FormControl>
                                         <div className="flex items-center">
                                             <FileText className="mr-2 h-4 w-4 opacity-70" />
@@ -667,7 +748,7 @@ export const ProfileForm: React.FC<{ profile?: ApplicantProfileData }> = ({ prof
                             name="registration_address"
                             render={({ field }) => (
                                 <FormItem>
-                                    <FormLabel>Адрес регистрации *</FormLabel>
+                                    <FormLabel>Адрес регистрации</FormLabel>
                                     <FormControl>
                                         <div className="flex items-center">
                                             <Home className="mr-2 h-4 w-4 opacity-70" />
@@ -683,7 +764,7 @@ export const ProfileForm: React.FC<{ profile?: ApplicantProfileData }> = ({ prof
                             name="actual_address"
                             render={({ field }) => (
                                 <FormItem>
-                                    <FormLabel>Фактический адрес *</FormLabel>
+                                    <FormLabel>Фактический адрес</FormLabel>
                                     <FormControl>
                                         <div className="flex items-center">
                                             <Home className="mr-2 h-4 w-4 opacity-70" />
@@ -706,7 +787,7 @@ export const ProfileForm: React.FC<{ profile?: ApplicantProfileData }> = ({ prof
                             name="education_type"
                             render={({ field }) => (
                                 <FormItem>
-                                    <FormLabel>Тип образования *</FormLabel>
+                                    <FormLabel>Тип образования</FormLabel>
                                     <FormControl>
                                         <div className="flex items-center">
                                             <Book className="mr-2 h-4 w-4 opacity-70" />
@@ -731,7 +812,7 @@ export const ProfileForm: React.FC<{ profile?: ApplicantProfileData }> = ({ prof
                             name="education_institution"
                             render={({ field }) => (
                                 <FormItem>
-                                    <FormLabel>Учебное заведение *</FormLabel>
+                                    <FormLabel>Учебное заведение</FormLabel>
                                     <FormControl>
                                         <div className="flex items-center">
                                             <Building className="mr-2 h-4 w-4 opacity-70" />
@@ -747,7 +828,7 @@ export const ProfileForm: React.FC<{ profile?: ApplicantProfileData }> = ({ prof
                             name="graduation_year"
                             render={({ field }) => (
                                 <FormItem>
-                                    <FormLabel>Год окончания *</FormLabel>
+                                    <FormLabel>Год выпуска</FormLabel>
                                     <FormControl>
                                         <div className="flex items-center">
                                             <Award className="mr-2 h-4 w-4 opacity-70" />
@@ -763,7 +844,7 @@ export const ProfileForm: React.FC<{ profile?: ApplicantProfileData }> = ({ prof
                             name="document_type"
                             render={({ field }) => (
                                 <FormItem>
-                                    <FormLabel>Тип документа *</FormLabel>
+                                    <FormLabel>Тип документа</FormLabel>
                                     <FormControl>
                                         <div className="flex items-center">
                                             <FileText className="mr-2 h-4 w-4 opacity-70" />
@@ -787,7 +868,7 @@ export const ProfileForm: React.FC<{ profile?: ApplicantProfileData }> = ({ prof
                             name="document_series"
                             render={({ field }) => (
                                 <FormItem>
-                                    <FormLabel>Серия документа *</FormLabel>
+                                    <FormLabel>Серия документа</FormLabel>
                                     <FormControl>
                                         <div className="flex items-center">
                                             <FileText className="mr-2 h-4 w-4 opacity-70" />
@@ -803,7 +884,7 @@ export const ProfileForm: React.FC<{ profile?: ApplicantProfileData }> = ({ prof
                             name="document_number"
                             render={({ field }) => (
                                 <FormItem>
-                                    <FormLabel>Номер документа *</FormLabel>
+                                    <FormLabel>Номер документа</FormLabel>
                                     <FormControl>
                                         <div className="flex items-center">
                                             <FileText className="mr-2 h-4 w-4 opacity-70" />
@@ -913,7 +994,7 @@ export const ProfileForm: React.FC<{ profile?: ApplicantProfileData }> = ({ prof
                                 name="mother_full_name"
                                 render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel>ФИО матери *</FormLabel>
+                                        <FormLabel>ФИО матери</FormLabel>
                                         <FormControl>
                                             <div className="flex items-center">
                                                 <User className="mr-2 h-4 w-4 opacity-70" />
@@ -929,7 +1010,7 @@ export const ProfileForm: React.FC<{ profile?: ApplicantProfileData }> = ({ prof
                                 name="mother_workplace"
                                 render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel>Место работы матери *</FormLabel>
+                                        <FormLabel>Место работы матери</FormLabel>
                                         <FormControl>
                                             <div className="flex items-center">
                                                 <Building className="mr-2 h-4 w-4 opacity-70" />
@@ -945,7 +1026,7 @@ export const ProfileForm: React.FC<{ profile?: ApplicantProfileData }> = ({ prof
                                 name="mother_phone"
                                 render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel>Телефон матери *</FormLabel>
+                                        <FormLabel>Телефон матери</FormLabel>
                                         <FormControl>
                                             <div className="flex items-center">
                                                 <Phone className="mr-2 h-4 w-4 opacity-70" />
@@ -964,7 +1045,7 @@ export const ProfileForm: React.FC<{ profile?: ApplicantProfileData }> = ({ prof
                                 name="father_full_name"
                                 render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel>ФИО отца *</FormLabel>
+                                        <FormLabel>ФИО отца</FormLabel>
                                         <FormControl>
                                             <div className="flex items-center">
                                                 <User className="mr-2 h-4 w-4 opacity-70" />
@@ -980,7 +1061,7 @@ export const ProfileForm: React.FC<{ profile?: ApplicantProfileData }> = ({ prof
                                 name="father_workplace"
                                 render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel>Место работы отца *</FormLabel>
+                                        <FormLabel>Место работы отца</FormLabel>
                                         <FormControl>
                                             <div className="flex items-center">
                                                 <Building className="mr-2 h-4 w-4 opacity-70" />
@@ -996,7 +1077,7 @@ export const ProfileForm: React.FC<{ profile?: ApplicantProfileData }> = ({ prof
                                 name="father_phone"
                                 render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel>Телефон отца *</FormLabel>
+                                        <FormLabel>Телефон отца</FormLabel>
                                         <FormControl>
                                             <div className="flex items-center">
                                                 <Phone className="mr-2 h-4 w-4 opacity-70" />
@@ -1013,7 +1094,9 @@ export const ProfileForm: React.FC<{ profile?: ApplicantProfileData }> = ({ prof
 
                 {/* Кнопка отправки */}
                 <div className="flex justify-end">
-                    <Button type="submit">Сохранить изменения</Button>
+                    <Button type="submit">
+                        Сохранить изменения
+                    </Button>
                 </div>
             </form>
         </Form>
