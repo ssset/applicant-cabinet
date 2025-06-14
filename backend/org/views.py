@@ -1,3 +1,4 @@
+from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiResponse, OpenApiExample
 import logging
 import uuid
 from rest_framework.views import APIView
@@ -21,20 +22,107 @@ from django.utils import timezone
 
 logger = logging.getLogger(__name__)
 
-# Настройка ЮKassa
 Configuration.account_id = settings.YUKASSA_SHOP_ID
 Configuration.secret_key = settings.YUKASSA_SECRET_KEY
 
 class PaymentWebhookView(APIView):
+    permission_classes = []
+    authentication_classes = []
+
+    @extend_schema(
+        summary="Обработка вебхука ЮKassa",
+        description="Обрабатывает уведомления от ЮKassa о статусе платежа. При успешной оплате создаёт организацию и корпус, отправляет уведомления администраторам.",
+        request={
+            "type": "object",
+            "properties": {
+                "event": {"type": "string", "description": "Событие вебхука (например, payment.succeeded)"},
+                "object": {
+                    "type": "object",
+                    "properties": {
+                        "id": {"type": "string", "description": "Идентификатор платежа"},
+                        "amount": {
+                            "type": "object",
+                            "properties": {
+                                "value": {"type": "string", "description": "Сумма платежа"},
+                                "currency": {"type": "string", "description": "Валюта платежа"}
+                            }
+                        },
+                        "metadata": {
+                            "type": "object",
+                            "properties": {
+                                "institution_name": {"type": "string", "description": "Название организации"},
+                                "email": {"type": "string", "description": "Email организации"},
+                                "phone": {"type": "string", "description": "Телефон организации"},
+                                "address": {"type": "string", "description": "Адрес организации"},
+                                "city": {"type": "string", "description": "Город организации"},
+                                "website": {"type": "string", "description": "Веб-сайт организации"},
+                                "description": {"type": "string", "description": "Описание организации"}
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        responses={
+            200: OpenApiResponse(
+                description="Вебхук успешно обработан",
+                examples=[
+                    OpenApiExample(
+                        name="Пример ответа",
+                        value={}
+                    )
+                ]
+            ),
+            400: OpenApiResponse(
+                description="Ошибка обработки вебхука или некорректные данные",
+                examples=[
+                    OpenApiExample(
+                        name="Ошибка 400",
+                        value={"error": "Invalid webhook data"}
+                    ),
+                    OpenApiExample(
+                        name="Ошибка валидации",
+                        value={"errors": {"name": ["Это поле обязательно"]}}
+                    )
+                ]
+            )
+        },
+        examples=[
+            OpenApiExample(
+                name="Пример запроса",
+                value={
+                    "event": "payment.succeeded",
+                    "object": {
+                        "id": "123456789",
+                        "amount": {
+                            "value": "4000.00",
+                            "currency": "RUB"
+                        },
+                        "metadata": {
+                            "institution_name": "Университет",
+                            "email": "contact@university.ru",
+                            "phone": "+79991234567",
+                            "address": "ул. Ленина, 10",
+                            "city": "Москва",
+                            "website": "www.university.ru",
+                            "description": "Ведущий вуз"
+                        }
+                    }
+                }
+            )
+        ]
+    )
     @method_decorator(csrf_exempt)
     def post(self, request):
+        logger.debug(f"Получен вебхук: {request.data}")
         try:
             notification = WebhookNotification(request.data)
+            logger.info(f"Обработка вебхука: event={notification.event}, payment_id={notification.object.id}")
             if notification.event == 'payment.succeeded':
                 payment = notification.object
                 metadata = payment.metadata
+                logger.debug(f"Метаданные платежа: {metadata}")
 
-                # Создание организации
                 organization_data = {
                     'name': metadata.get('institution_name', 'Не указано'),
                     'email': metadata.get('email', 'Не указано'),
@@ -44,11 +132,14 @@ class PaymentWebhookView(APIView):
                     'website': metadata.get('website', ''),
                     'description': metadata.get('description', '')
                 }
+                logger.debug(f"Данные для организации: {organization_data}")
                 org_serializer = OrganizationSerializer(data=organization_data)
-                org_serializer.is_valid(raise_exception=True)
+                if not org_serializer.is_valid():
+                    logger.error(f"Ошибка валидации организации: {org_serializer.errors}")
+                    return Response({"errors": org_serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
                 organization = org_serializer.save()
+                logger.info(f"Создана организация: {organization.name}")
 
-                # Создание корпуса
                 building_data = {
                     'organization': organization.id,
                     'name': 'Главный корпус',
@@ -56,18 +147,21 @@ class PaymentWebhookView(APIView):
                     'phone': metadata.get('phone', ''),
                     'email': metadata.get('email', 'Не указано')
                 }
+                logger.debug(f"Данные для корпуса: {building_data}")
                 building_serializer = BuildingSerializer(data=building_data)
-                building_serializer.is_valid(raise_exception=True)
+                if not building_serializer.is_valid():
+                    logger.error(f"Ошибка валидации корпуса: {building_serializer.errors}")
+                    return Response({"errors": building_serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
                 building = building_serializer.save()
+                logger.info(f"Создан корпус: {building.name}")
 
                 admin_emails = CustomUser.objects.filter(role='admin_app').values_list('email', flat=True)
                 if not admin_emails:
-                    logger.error("Не найдено пользователей с ролью admin_app для уведомления об оплате")
+                    logger.warning("Не найдено пользователей с ролью admin_app для уведомления об оплате")
                     return Response(status=status.HTTP_200_OK)
 
-                # Рендеринг HTML-шаблона для письма
                 html_message = render_to_string('email/payment_success_email.html', {
-                    'logo_url': settings.LOGO_URL,  # Убедитесь, что это определено в настройках
+                    'logo_url': settings.LOGO_URL,
                     'organization_name': organization.name,
                     'organization_email': organization.email,
                     'amount_value': payment.amount.value,
@@ -75,8 +169,8 @@ class PaymentWebhookView(APIView):
                     'payment_id': payment.id,
                     'organization_address': organization.address,
                     'organization_city': organization.city,
-                    'admin_url': f"{settings.FRONTEND_URL}/admin",  # URL панели администратора
-                    'support_url': settings.SUPPORT_URL,  # Убедитесь, что это определено
+                    'admin_url': f"{settings.FRONTEND_URL}/admin",
+                    'support_url': settings.SUPPORT_URL,
                     'year': timezone.now().year,
                 })
 
@@ -101,24 +195,74 @@ class PaymentWebhookView(APIView):
                 )
                 logger.info(f"Оплата {payment.id} обработана, организация создана, уведомления отправлены администраторам")
 
-            return Response(status=status.HTTP_200_OK)
+                return Response(status=status.HTTP_200_OK)
+            else:
+                logger.info(f"Игнорируем вебхук с событием: {notification.event}")
+                return Response(status=status.HTTP_200_OK)
         except Exception as e:
             logger.error(f"Ошибка обработки вебхука: {str(e)}")
-            return Response(status=status.HTTP_400_BAD_REQUEST)
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
 class PaymentView(APIView):
     permission_classes = []
 
+    @extend_schema(
+        summary="Инициация оплаты",
+        description="Создаёт платёж через ЮKassa для регистрации учебного заведения. Возвращает URL для перенаправления на страницу оплаты.",
+        request={
+            "type": "object",
+            "properties": {
+                "institutionName": {"type": "string", "description": "Название организации"},
+                "email": {"type": "string", "description": "Email организации"},
+                "phone": {"type": "string", "description": "Телефон организации"},
+                "address": {"type": "string", "description": "Адрес организации"},
+                "city": {"type": "string", "description": "Город организации"},
+                "website": {"type": "string", "description": "Веб-сайт организации"},
+                "description": {"type": "string", "description": "Описание организации"},
+                "return_url": {"type": "string", "description": "URL возврата после оплаты"}
+            },
+            "required": ["institutionName", "email"]
+        },
+        responses={
+            200: OpenApiResponse(
+                description="Платёж успешно инициирован",
+                examples=[
+                    OpenApiExample(
+                        name="Пример ответа",
+                        value={
+                            "payment_url": "https://yookassa.ru/checkout?payment_id=123456789",
+                            "payment_id": "123456789"
+                        }
+                    )
+                ]
+            )
+        },
+        examples=[
+            OpenApiExample(
+                name="Пример запроса",
+                value={
+                    "institutionName": "Университет",
+                    "email": "contact@university.ru",
+                    "phone": "+79991234567",
+                    "address": "ул. Ленина, 10",
+                    "city": "Москва",
+                    "website": "www.university.ru",
+                    "description": "Ведущий вуз",
+                    "return_url": "https://applicantcabinet.ru/payment-success"
+                }
+            )
+        ]
+    )
     def post(self, request):
         idempotence_key = str(uuid.uuid4())
         payment = Payment.create({
             "amount": {
-                "value": "2000.00",
+                "value": "4000.00",
                 "currency": "RUB"
             },
             "confirmation": {
                 "type": "redirect",
-                "return_url": request.data.get('return_url', 'http://localhost:3000/payment-success')
+                "return_url": request.data.get('return_url', 'https://applicantcabinet.ru/payment-success')
             },
             "capture": True,
             "description": "Оплата регистрации учебного заведения",
@@ -142,6 +286,57 @@ class PaymentView(APIView):
 class OrganizationApplicationView(APIView):
     permission_classes = []
 
+    @extend_schema(
+        summary="Подача заявки на регистрацию организации",
+        description="Отправляет заявку на регистрацию организации администраторам системы. После проверки администратор создаст организацию.",
+        request=OrganizationSerializer,
+        responses={
+            200: OpenApiResponse(
+                description="Заявка успешно отправлена",
+                examples=[
+                    OpenApiExample(
+                        name="Пример ответа",
+                        value={
+                            "message": "Заявка успешно отправлена. Администратор свяжется с вами после проверки."
+                        }
+                    )
+                ]
+            ),
+            400: OpenApiResponse(
+                description="Некорректные данные",
+                examples=[
+                    OpenApiExample(
+                        name="Ошибка валидации",
+                        value={"name": ["Это поле обязательно"]}
+                    )
+                ]
+            ),
+            500: OpenApiResponse(
+                description="Ошибка сервера",
+                examples=[
+                    OpenApiExample(
+                        name="Ошибка 500",
+                        value={"message": "Нет доступных администраторов для обработки запроса"}
+                    )
+                ]
+            )
+        },
+        examples=[
+            OpenApiExample(
+                name="Пример запроса",
+                value={
+                    "name": "Университет",
+                    "email": "contact@university.ru",
+                    "phone": "+79991234567",
+                    "address": "ул. Ленина, 10",
+                    "city": "Москва",
+                    "website": "www.university.ru",
+                    "description": "Ведущий вуз",
+                    "institutionType": "Университет"
+                }
+            )
+        ]
+    )
     def post(self, request):
         serializer = OrganizationSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -184,6 +379,60 @@ class OrganizationApplicationView(APIView):
 class OrganizationView(APIView):
     permission_classes = [IsAuthenticated, IsEmailVerified, IsAdminApp | IsAdminOrg]
 
+    @extend_schema(
+        summary="Получение списка организаций",
+        description="Возвращает список организаций. Для admin_app — все организации, для admin_org — только организация пользователя. Данные кэшируются на 1 час.",
+        responses={
+            200: OpenApiResponse(
+                description="Список организаций успешно получен",
+                response=OrganizationSerializer(many=True),
+                examples=[
+                    OpenApiExample(
+                        name="Пример ответа",
+                        value=[
+                            {
+                                "id": 1,
+                                "name": "Университет",
+                                "email": "contact@university.ru",
+                                "phone": "+79991234567",
+                                "address": "ул. Ленина, 10",
+                                "city": "Москва",
+                                "website": "www.university.ru",
+                                "description": "Ведущий вуз"
+                            }
+                        ]
+                    )
+                ]
+            ),
+            400: OpenApiResponse(
+                description="Недостаточно прав или нет привязанной организации",
+                examples=[
+                    OpenApiExample(
+                        name="Ошибка 400",
+                        value={"detail": "У пользователя нет назначенной организации или недостаточно прав"}
+                    )
+                ]
+            ),
+            401: OpenApiResponse(
+                description="Неавторизованный доступ",
+                examples=[
+                    OpenApiExample(
+                        name="Ошибка 401",
+                        value={"detail": "Authentication credentials were not provided."}
+                    )
+                ]
+            ),
+            403: OpenApiResponse(
+                description="Email не подтверждён",
+                examples=[
+                    OpenApiExample(
+                        name="Ошибка 403",
+                        value={"message": "У вас недостаточно прав или email не подтверждён"}
+                    )
+                ]
+            )
+        }
+    )
     def get(self, request):
         cache_key = f"organizations_{request.user.role}_{request.user.id}"
         cached_data = cache.get(cache_key)
@@ -205,6 +454,73 @@ class OrganizationView(APIView):
         cache.set(cache_key, data, timeout=3600)
         return Response(data, status=status.HTTP_200_OK)
 
+    @extend_schema(
+        summary="Создание организации",
+        description="Создаёт новую организацию. Доступно для admin_app или admin_org.",
+        request=OrganizationSerializer,
+        responses={
+            201: OpenApiResponse(
+                description="Организация успешно создана",
+                response=OrganizationSerializer,
+                examples=[
+                    OpenApiExample(
+                        name="Пример ответа",
+                        value={
+                            "id": 1,
+                            "name": "Университет",
+                            "email": "contact@university.ru",
+                            "phone": "+79991234567",
+                            "address": "ул. Ленина, 10",
+                            "city": "Москва",
+                            "website": "www.university.ru",
+                            "description": "Ведущий вуз"
+                        }
+                    )
+                ]
+            ),
+            400: OpenApiResponse(
+                description="Некорректные данные",
+                examples=[
+                    OpenApiExample(
+                        name="Ошибка валидации",
+                        value={"name": ["Это поле обязательно"]}
+                    )
+                ]
+            ),
+            401: OpenApiResponse(
+                description="Неавторизованный доступ",
+                examples=[
+                    OpenApiExample(
+                        name="Ошибка 401",
+                        value={"detail": "Authentication credentials were not provided."}
+                    )
+                ]
+            ),
+            403: OpenApiResponse(
+                description="Email не подтверждён",
+                examples=[
+                    OpenApiExample(
+                        name="Ошибка 403",
+                        value={"message": "У вас недостаточно прав или email не подтверждён"}
+                    )
+                ]
+            )
+        },
+        examples=[
+            OpenApiExample(
+                name="Пример запроса",
+                value={
+                    "name": "Университет",
+                    "email": "contact@university.ru",
+                    "phone": "+79991234567",
+                    "address": "ул. Ленина, 10",
+                    "city": "Москва",
+                    "website": "www.university.ru",
+                    "description": "Ведущий вуз"
+                }
+            )
+        ]
+    )
     def post(self, request):
         serializer = OrganizationSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -213,6 +529,77 @@ class OrganizationView(APIView):
         cache.delete_pattern("organizations_*")
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
+    @extend_schema(
+        summary="Обновление организации",
+        description="Частично обновляет данные организации по её идентификатору. Доступно для admin_app или admin_org.",
+        request=OrganizationSerializer,
+        responses={
+            200: OpenApiResponse(
+                description="Организация успешно обновлена",
+                response=OrganizationSerializer,
+                examples=[
+                    OpenApiExample(
+                        name="Пример ответа",
+                        value={
+                            "id": 1,
+                            "name": "Университет",
+                            "email": "new@university.ru",
+                            "phone": "+79991234567",
+                            "address": "ул. Ленина, 10",
+                            "city": "Москва",
+                            "website": "www.university.ru",
+                            "description": "Ведущий вуз"
+                        }
+                    )
+                ]
+            ),
+            400: OpenApiResponse(
+                description="Некорректные данные",
+                examples=[
+                    OpenApiExample(
+                        name="Ошибка валидации",
+                        value={"id": ["Это поле обязательно"]}
+                    )
+                ]
+            ),
+            401: OpenApiResponse(
+                description="Неавторизованный доступ",
+                examples=[
+                    OpenApiExample(
+                        name="Ошибка 401",
+                        value={"detail": "Authentication credentials were not provided."}
+                    )
+                ]
+            ),
+            403: OpenApiResponse(
+                description="Email не подтверждён",
+                examples=[
+                    OpenApiExample(
+                        name="Ошибка 403",
+                        value={"message": "У вас недостаточно прав или email не подтверждён"}
+                    )
+                ]
+            ),
+            404: OpenApiResponse(
+                description="Организация не найдена",
+                examples=[
+                    OpenApiExample(
+                        name="Ошибка 404",
+                        value={"detail": "No Organization matches the given query."}
+                    )
+                ]
+            )
+        },
+        examples=[
+            OpenApiExample(
+                name="Пример запроса",
+                value={
+                    "id": 1,
+                    "email": "new@university.ru"
+                }
+            )
+        ]
+    )
     def patch(self, request):
         organization = Organization.objects.get(id=request.data.get('id'))
         serializer = OrganizationSerializer(organization, data=request.data, partial=True)
@@ -222,6 +609,69 @@ class OrganizationView(APIView):
         cache.delete_pattern("organizations_*")
         return Response(serializer.data, status=status.HTTP_200_OK)
 
+    @extend_schema(
+        summary="Удаление организации",
+        description="Удаляет организацию по её идентификатору. Доступно для admin_app или admin_org.",
+        parameters=[
+            OpenApiParameter(
+                name="id",
+                type=int,
+                location="query",
+                description="Идентификатор организации",
+                required=True,
+                examples=[
+                    OpenApiExample(name="Пример ID", value=1)
+                ]
+            )
+        ],
+        responses={
+            204: OpenApiResponse(
+                description="Организация успешно удалена",
+                examples=[
+                    OpenApiExample(
+                        name="Пример ответа",
+                        value={"message": "Организация удалена"}
+                    )
+                ]
+            ),
+            400: OpenApiResponse(
+                description="Идентификатор отсутствует",
+                examples=[
+                    OpenApiExample(
+                        name="Ошибка 400",
+                        value={"detail": "Идентификатор обязателен"}
+                    )
+                ]
+            ),
+            401: OpenApiResponse(
+                description="Неавторизованный доступ",
+                examples=[
+                    OpenApiExample(
+                        name="Ошибка 401",
+                        value={"detail": "Authentication credentials were not provided."}
+                    )
+                ]
+            ),
+            403: OpenApiResponse(
+                description="Email не подтверждён",
+                examples=[
+                    OpenApiExample(
+                        name="Ошибка 403",
+                        value={"message": "У вас недостаточно прав или email не подтверждён"}
+                    )
+                ]
+            ),
+            404: OpenApiResponse(
+                description="Организация не найдена",
+                examples=[
+                    OpenApiExample(
+                        name="Ошибка 404",
+                        value={"detail": "No Organization matches the given query."}
+                    )
+                ]
+            )
+        }
+    )
     def delete(self, request):
         organization = Organization.objects.get(id=request.query_params.get('id'))
         organization.delete()
@@ -232,6 +682,58 @@ class OrganizationView(APIView):
 class BuildingView(APIView):
     permission_classes = [IsAuthenticated, IsEmailVerified, IsAdminOrg | IsAdminApp]
 
+    @extend_schema(
+        summary="Получение списка корпусов",
+        description="Возвращает список корпусов. Для admin_app — все корпуса, для admin_org — корпуса организации пользователя. Данные кэшируются на 1 час.",
+        responses={
+            200: OpenApiResponse(
+                description="Список корпусов успешно получен",
+                response=BuildingSerializer(many=True),
+                examples=[
+                    OpenApiExample(
+                        name="Пример ответа",
+                        value=[
+                            {
+                                "id": 1,
+                                "name": "Главный корпус",
+                                "address": "ул. Ленина, 10",
+                                "phone": "+79991234567",
+                                "email": "info@university.ru",
+                                "organization": 1
+                            }
+                        ]
+                    )
+                ]
+            ),
+            400: OpenApiResponse(
+                description="Недостаточно прав или нет привязанной организации",
+                examples=[
+                    OpenApiExample(
+                        name="Ошибка 400",
+                        value={"detail": "У пользователя нет назначенной организации или недостаточно прав"}
+                    )
+                ]
+            ),
+            401: OpenApiResponse(
+                description="Неавторизованный доступ",
+                examples=[
+                    OpenApiExample(
+                        name="Ошибка 401",
+                        value={"detail": "Authentication credentials were not provided."}
+                    )
+                ]
+            ),
+            403: OpenApiResponse(
+                description="Email не подтверждён",
+                examples=[
+                    OpenApiExample(
+                        name="Ошибка 403",
+                        value={"message": "У вас недостаточно прав или email не подтверждён"}
+                    )
+                ]
+            )
+        }
+    )
     def get(self, request):
         cache_key = f"buildings_{request.user.role}_{request.user.id}"
         cached_data = cache.get(cache_key)
@@ -253,6 +755,69 @@ class BuildingView(APIView):
         cache.set(cache_key, data, timeout=3600)
         return Response(data, status=status.HTTP_200_OK)
 
+    @extend_schema(
+        summary="Создание корпуса",
+        description="Создаёт новый корпус для организации. Отправляется уведомление на email пользователя.",
+        request=BuildingSerializer,
+        responses={
+            201: OpenApiResponse(
+                description="Корпус успешно создан",
+                response=BuildingSerializer,
+                examples=[
+                    OpenApiExample(
+                        name="Пример ответа",
+                        value={
+                            "id": 1,
+                            "name": "Главный корпус",
+                            "address": "ул. Ленина, 10",
+                            "phone": "+79991234567",
+                            "email": "info@university.ru",
+                            "organization": 1
+                        }
+                    )
+                ]
+            ),
+            400: OpenApiResponse(
+                description="Некорректные данные",
+                examples=[
+                    OpenApiExample(
+                        name="Ошибка валидации",
+                        value={"name": ["Это поле обязательно"]}
+                    )
+                ]
+            ),
+            401: OpenApiResponse(
+                description="Неавторизованный доступ",
+                examples=[
+                    OpenApiExample(
+                        name="Ошибка 401",
+                        value={"detail": "Authentication credentials were not provided."}
+                    )
+                ]
+            ),
+            403: OpenApiResponse(
+                description="Email не подтверждён",
+                examples=[
+                    OpenApiExample(
+                        name="Ошибка 403",
+                        value={"message": "У вас недостаточно прав или email не подтверждён"}
+                    )
+                ]
+            )
+        },
+        examples=[
+            OpenApiExample(
+                name="Пример запроса",
+                value={
+                    "name": "Главный корпус",
+                    "address": "ул. Ленина, 10",
+                    "phone": "+79991234567",
+                    "email": "info@university.ru",
+                    "organization": 1
+                }
+            )
+        ]
+    )
     def post(self, request):
         logger.debug(f"BuildingView POST запрос данные: {request.data}")
         serializer = BuildingSerializer(data=request.data)
@@ -273,6 +838,75 @@ class BuildingView(APIView):
         cache.delete_pattern("buildings_*")
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
+    @extend_schema(
+        summary="Обновление корпуса",
+        description="Частично обновляет данные корпуса по его идентификатору. Доступно для admin_app или admin_org.",
+        request=BuildingSerializer,
+        responses={
+            200: OpenApiResponse(
+                description="Корпус успешно обновлён",
+                response=BuildingSerializer,
+                examples=[
+                    OpenApiExample(
+                        name="Пример ответа",
+                        value={
+                            "id": 1,
+                            "name": "Главный корпус",
+                            "address": "ул. Ленина, 20",
+                            "phone": "+79991234567",
+                            "email": "info@university.ru",
+                            "organization": 1
+                        }
+                    )
+                ]
+            ),
+            400: OpenApiResponse(
+                description="Некорректные данные или ID отсутствует",
+                examples=[
+                    OpenApiExample(
+                        name="Ошибка 400",
+                        value={"detail": "ID корпуса обязателен"}
+                    )
+                ]
+            ),
+            401: OpenApiResponse(
+                description="Неавторизованный доступ",
+                examples=[
+                    OpenApiExample(
+                        name="Ошибка 401",
+                        value={"detail": "Authentication credentials were not provided."}
+                    )
+                ]
+            ),
+            403: OpenApiResponse(
+                description="Email не подтверждён",
+                examples=[
+                    OpenApiExample(
+                        name="Ошибка 403",
+                        value={"message": "У вас недостаточно прав или email не подтверждён"}
+                    )
+                ]
+            ),
+            404: OpenApiResponse(
+                description="Корпус не найден",
+                examples=[
+                    OpenApiExample(
+                        name="Ошибка 404",
+                        value={"detail": "No Building matches the given query."}
+                    )
+                ]
+            )
+        },
+        examples=[
+            OpenApiExample(
+                name="Пример запроса",
+                value={
+                    "id": 1,
+                    "address": "ул. Ленина, 20"
+                }
+            )
+        ]
+    )
     def patch(self, request):
         building_id = request.data.get('id')
         if not building_id:
@@ -292,6 +926,69 @@ class BuildingView(APIView):
         cache.delete_pattern("buildings_*")
         return Response(serializer.data, status=status.HTTP_200_OK)
 
+    @extend_schema(
+        summary="Удаление корпуса",
+        description="Удаляет корпус по его идентификатору. Доступно для admin_app или admin_org.",
+        parameters=[
+            OpenApiParameter(
+                name="id",
+                type=int,
+                location="query",
+                description="Идентификатор корпуса",
+                required=True,
+                examples=[
+                    OpenApiExample(name="Пример ID", value=1)
+                ]
+            )
+        ],
+        responses={
+            204: OpenApiResponse(
+                description="Корпус успешно удалён",
+                examples=[
+                    OpenApiExample(
+                        name="Пример ответа",
+                        value={"message": "Корпус удален"}
+                    )
+                ]
+            ),
+            400: OpenApiResponse(
+                description="Идентификатор отсутствует",
+                examples=[
+                    OpenApiExample(
+                        name="Ошибка 400",
+                        value={"detail": "ID корпуса обязателен"}
+                    )
+                ]
+            ),
+            401: OpenApiResponse(
+                description="Неавторизованный доступ",
+                examples=[
+                    OpenApiExample(
+                        name="Ошибка 401",
+                        value={"detail": "Authentication credentials were not provided."}
+                    )
+                ]
+            ),
+            403: OpenApiResponse(
+                description="Email не подтверждён",
+                examples=[
+                    OpenApiExample(
+                        name="Ошибка 403",
+                        value={"message": "У вас недостаточно прав или email не подтверждён"}
+                    )
+                ]
+            ),
+            404: OpenApiResponse(
+                description="Корпус не найден",
+                examples=[
+                    OpenApiExample(
+                        name="Ошибка 404",
+                        value={"detail": "No Building matches the given query."}
+                    )
+                ]
+            )
+        }
+    )
     def delete(self, request):
         building_id = request.query_params.get('id')
         if not building_id:
@@ -312,6 +1009,56 @@ class BuildingView(APIView):
 class SpecialtyView(APIView):
     permission_classes = [IsAuthenticated, IsEmailVerified, IsModerator | IsAdminOrg]
 
+    @extend_schema(
+        summary="Получение списка специальностей",
+        description="Возвращает список специальностей организации пользователя. Данные кэшируются на 1 час.",
+        responses={
+            200: OpenApiResponse(
+                description="Список специальностей успешно получен",
+                response=SpecialtySerializer(many=True),
+                examples=[
+                    OpenApiExample(
+                        name="Пример ответа",
+                        value=[
+                            {
+                                "id": 1,
+                                "code": "09.03.01",
+                                "name": "Информатика",
+                                "organization": 1
+                            }
+                        ]
+                    )
+                ]
+            ),
+            400: OpenApiResponse(
+                description="Нет привязанной организации",
+                examples=[
+                    OpenApiExample(
+                        name="Ошибка 400",
+                        value={"detail": "У пользователя нет назначенной организации"}
+                    )
+                ]
+            ),
+            401: OpenApiResponse(
+                description="Неавторизованный доступ",
+                examples=[
+                    OpenApiExample(
+                        name="Ошибка 401",
+                        value={"detail": "Authentication credentials were not provided."}
+                    )
+                ]
+            ),
+            403: OpenApiResponse(
+                description="Email не подтверждён",
+                examples=[
+                    OpenApiExample(
+                        name="Ошибка 403",
+                        value={"message": "У вас недостаточно прав или email не подтверждён"}
+                    )
+                ]
+            )
+        }
+    )
     def get(self, request):
         if not request.user.organization:
             raise ValidationError("У пользователя нет назначенной организации")
@@ -329,6 +1076,69 @@ class SpecialtyView(APIView):
         logger.info(f"Получено {len(specialties)} специальностей для организации {request.user.organization.name}")
         return Response(data, status=status.HTTP_200_OK)
 
+    @extend_schema(
+        summary="Создание специальности",
+        description="Создаёт новую специальность для организации пользователя.",
+        request=SpecialtySerializer,
+        responses={
+            201: OpenApiResponse(
+                description="Специальность успешно создана",
+                response=SpecialtySerializer,
+                examples=[
+                    OpenApiExample(
+                        name="Пример ответа",
+                        value={
+                            "id": 1,
+                            "code": "09.03.01",
+                            "name": "Информатика",
+                            "organization": 1
+                        }
+                    )
+                ]
+            ),
+            400: OpenApiResponse(
+                description="Некорректные данные или нет прав",
+                examples=[
+                    OpenApiExample(
+                        name="Ошибка валидации",
+                        value={"code": ["Это поле обязательно"]}
+                    ),
+                    OpenApiExample(
+                        name="Ошибка организации",
+                        value={"detail": "У пользователя нет назначенной организации"}
+                    )
+                ]
+            ),
+            401: OpenApiResponse(
+                description="Неавторизованный доступ",
+                examples=[
+                    OpenApiExample(
+                        name="Ошибка 401",
+                        value={"detail": "Authentication credentials were not provided."}
+                    )
+                ]
+            ),
+            403: OpenApiResponse(
+                description="Email не подтверждён",
+                examples=[
+                    OpenApiExample(
+                        name="Ошибка 403",
+                        value={"message": "У вас недостаточно прав или email не подтверждён"}
+                    )
+                ]
+            )
+        },
+        examples=[
+            OpenApiExample(
+                name="Пример запроса",
+                value={
+                    "code": "09.03.01",
+                    "name": "Информатика",
+                    "organization": 1
+                }
+            )
+        ]
+    )
     def post(self, request):
         if not request.user.is_authenticated:
             raise ValidationError("Требуется аутентификация")
@@ -348,6 +1158,73 @@ class SpecialtyView(APIView):
         cache.delete_pattern("specialties_*")
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
+    @extend_schema(
+        summary="Обновление специальности",
+        description="Частично обновляет данные специальности по её идентификатору.",
+        request=SpecialtySerializer,
+        responses={
+            200: OpenApiResponse(
+                description="Специальность успешно обновлена",
+                response=SpecialtySerializer,
+                examples=[
+                    OpenApiExample(
+                        name="Пример ответа",
+                        value={
+                            "id": 1,
+                            "code": "09.03.01",
+                            "name": "Информатика и вычислительная техника",
+                            "organization": 1
+                        }
+                    )
+                ]
+            ),
+            400: OpenApiResponse(
+                description="Некорректные данные или ID отсутствует",
+                examples=[
+                    OpenApiExample(
+                        name="Ошибка 400",
+                        value={"detail": "ID специальности обязателен"}
+                    )
+                ]
+            ),
+            401: OpenApiResponse(
+                description="Неавторизованный доступ",
+                examples=[
+                    OpenApiExample(
+                        name="Ошибка 401",
+                        value={"detail": "Authentication credentials were not provided."}
+                    )
+                ]
+            ),
+            403: OpenApiResponse(
+                description="Email не подтверждён",
+                examples=[
+                    OpenApiExample(
+                        name="Ошибка 403",
+                        value={"message": "У вас недостаточно прав или email не подтверждён"}
+                    )
+                ]
+            ),
+            404: OpenApiResponse(
+                description="Специальность не найдена",
+                examples=[
+                    OpenApiExample(
+                        name="Ошибка 404",
+                        value={"detail": "No Specialty matches the given query."}
+                    )
+                ]
+            )
+        },
+        examples=[
+            OpenApiExample(
+                name="Пример запроса",
+                value={
+                    "id": 1,
+                    "name": "Информатика и вычислительная техника"
+                }
+            )
+        ]
+    )
     def patch(self, request):
         if not request.user.organization:
             raise ValidationError("У пользователя нет назначенной организации")
@@ -363,6 +1240,69 @@ class SpecialtyView(APIView):
         cache.delete_pattern("specialties_*")
         return Response(serializer.data, status=status.HTTP_200_OK)
 
+    @extend_schema(
+        summary="Удаление специальности",
+        description="Удаляет специальность по её идентификатору.",
+        parameters=[
+            OpenApiParameter(
+                name="id",
+                type=int,
+                location="query",
+                description="Идентификатор специальности",
+                required=True,
+                examples=[
+                    OpenApiExample(name="Пример ID", value=1)
+                ]
+            )
+        ],
+        responses={
+            204: OpenApiResponse(
+                description="Специальность успешно удалена",
+                examples=[
+                    OpenApiExample(
+                        name="Пример ответа",
+                        value={"message": "Специальность удалена"}
+                    )
+                ]
+            ),
+            400: OpenApiResponse(
+                description="Идентификатор отсутствует",
+                examples=[
+                    OpenApiExample(
+                        name="Ошибка 400",
+                        value={"detail": "ID специальности обязателен"}
+                    )
+                ]
+            ),
+            401: OpenApiResponse(
+                description="Неавторизованный доступ",
+                examples=[
+                    OpenApiExample(
+                        name="Ошибка 401",
+                        value={"detail": "Authentication credentials were not provided."}
+                    )
+                ]
+            ),
+            403: OpenApiResponse(
+                description="Email не подтверждён",
+                examples=[
+                    OpenApiExample(
+                        name="Ошибка 403",
+                        value={"message": "У вас недостаточно прав или email не подтверждён"}
+                    )
+                ]
+            ),
+            404: OpenApiResponse(
+                description="Специальность не найдена",
+                examples=[
+                    OpenApiExample(
+                        name="Ошибка 404",
+                        value={"detail": "No Specialty matches the given query."}
+                    )
+                ]
+            )
+        }
+    )
     def delete(self, request):
         if not request.user.organization:
             raise ValidationError("У пользователя нет назначенной организации")
@@ -379,6 +1319,67 @@ class SpecialtyView(APIView):
 class BuildingSpecialtyView(APIView):
     permission_classes = [IsAuthenticated, IsEmailVerified, IsAdminOrg]
 
+    @extend_schema(
+        summary="Создание связи специальности с корпусом",
+        description="Создаёт связь между специальностью и корпусом для организации пользователя.",
+        request=BuildingSpecialtySerializer,
+        responses={
+            201: OpenApiResponse(
+                description="Связь успешно создана",
+                response=BuildingSpecialtySerializer,
+                examples=[
+                    OpenApiExample(
+                        name="Пример ответа",
+                        value={
+                            "id": 1,
+                            "building": 1,
+                            "specialty": 1
+                        }
+                    )
+                ]
+            ),
+            400: OpenApiResponse(
+                description="Некорректные данные или нет прав",
+                examples=[
+                    OpenApiExample(
+                        name="Ошибка валидации",
+                        value={"building": ["Это поле обязательно"]}
+                    ),
+                    OpenApiExample(
+                        name="Ошибка организации",
+                        value={"detail": "У пользователя нет назначенной организации"}
+                    )
+                ]
+            ),
+            401: OpenApiResponse(
+                description="Неавторизованный доступ",
+                examples=[
+                    OpenApiExample(
+                        name="Ошибка 401",
+                        value={"detail": "Authentication credentials were not provided."}
+                    )
+                ]
+            ),
+            403: OpenApiResponse(
+                description="Email не подтверждён",
+                examples=[
+                    OpenApiExample(
+                        name="Ошибка 403",
+                        value={"message": "У вас недостаточно прав или email не подтверждён"}
+                    )
+                ]
+            )
+        },
+        examples=[
+            OpenApiExample(
+                name="Пример запроса",
+                value={
+                    "building": 1,
+                    "specialty": 1
+                }
+            )
+        ]
+    )
     def post(self, request):
         if not request.user.organization:
             raise ValidationError("У пользователя нет назначенной организации")
@@ -391,6 +1392,72 @@ class BuildingSpecialtyView(APIView):
         cache.delete_pattern("leaderboard_*")
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
+    @extend_schema(
+        summary="Обновление связи специальности с корпусом",
+        description="Частично обновляет данные связи между специальностью и корпусом по её идентификатору.",
+        request=BuildingSpecialtySerializer,
+        responses={
+            200: OpenApiResponse(
+                description="Связь успешно обновлена",
+                response=BuildingSpecialtySerializer,
+                examples=[
+                    OpenApiExample(
+                        name="Пример ответа",
+                        value={
+                            "id": 1,
+                            "building": 1,
+                            "specialty": 2
+                        }
+                    )
+                ]
+            ),
+            400: OpenApiResponse(
+                description="Некорректные данные или ID отсутствует",
+                examples=[
+                    OpenApiExample(
+                        name="Ошибка 400",
+                        value={"detail": "ID BuildingSpecialty обязателен"}
+                    )
+                ]
+            ),
+            401: OpenApiResponse(
+                description="Неавторизованный доступ",
+                examples=[
+                    OpenApiExample(
+                        name="Ошибка 401",
+                        value={"detail": "Authentication credentials were not provided."}
+                    )
+                ]
+            ),
+            403: OpenApiResponse(
+                description="Email не подтверждён",
+                examples=[
+                    OpenApiExample(
+                        name="Ошибка 403",
+                        value={"message": "У вас недостаточно прав или email не подтверждён"}
+                    )
+                ]
+            ),
+            404: OpenApiResponse(
+                description="Связь не найдена",
+                examples=[
+                    OpenApiExample(
+                        name="Ошибка 404",
+                        value={"detail": "No BuildingSpecialty matches the given query."}
+                    )
+                ]
+            )
+        },
+        examples=[
+            OpenApiExample(
+                name="Пример запроса",
+                value={
+                    "id": 1,
+                    "specialty": 2
+                }
+            )
+        ]
+    )
     def patch(self, request):
         if not request.user.organization:
             raise ValidationError("У пользователя нет назначенной организации")
@@ -407,6 +1474,69 @@ class BuildingSpecialtyView(APIView):
         cache.delete_pattern("leaderboard_*")
         return Response(serializer.data, status=status.HTTP_200_OK)
 
+    @extend_schema(
+        summary="Удаление связи специальности с корпусом",
+        description="Удаляет связь между специальностью и корпусом по её идентификатору.",
+        parameters=[
+            OpenApiParameter(
+                name="id",
+                type=int,
+                location="query",
+                description="Идентификатор связи BuildingSpecialty",
+                required=True,
+                examples=[
+                    OpenApiExample(name="Пример ID", value=1)
+                ]
+            )
+        ],
+        responses={
+            204: OpenApiResponse(
+                description="Связь успешно удалена",
+                examples=[
+                    OpenApiExample(
+                        name="Пример ответа",
+                        value={"message": "BuildingSpecialty удален"}
+                    )
+                ]
+            ),
+            400: OpenApiResponse(
+                description="Идентификатор отсутствует",
+                examples=[
+                    OpenApiExample(
+                        name="Ошибка 400",
+                        value={"detail": "ID BuildingSpecialty обязателен"}
+                    )
+                ]
+            ),
+            401: OpenApiResponse(
+                description="Неавторизованный доступ",
+                examples=[
+                    OpenApiExample(
+                        name="Ошибка 401",
+                        value={"detail": "Authentication credentials were not provided."}
+                    )
+                ]
+            ),
+            403: OpenApiResponse(
+                description="Email не подтверждён",
+                examples=[
+                    OpenApiExample(
+                        name="Ошибка 403",
+                        value={"message": "У вас недостаточно прав или email не подтверждён"}
+                    )
+                ]
+            ),
+            404: OpenApiResponse(
+                description="Связь не найдена",
+                examples=[
+                    OpenApiExample(
+                        name="Ошибка 404",
+                        value={"detail": "No BuildingSpecialty matches the given query."}
+                    )
+                ]
+            )
+        }
+    )
     def delete(self, request):
         if not request.user.organization:
             raise ValidationError("У пользователя нет назначенной организации")

@@ -36,7 +36,8 @@ services:
       context: .
       dockerfile: Dockerfile.celery
     volumes:
-      - ./backend:/app
+      - media_volume:/app/media
+      - app_volume:/app
     env_file:
       - .env
     depends_on:
@@ -92,7 +93,7 @@ services:
       - static_volume:/var/www/static
       - media_volume:/var/www/media
       - frontend_build:/usr/share/nginx/html
-      - /etc/letsencrypt:/etc/letsencrypt:ro
+      - /var/www/applicant/certs:/etc/letsencrypt:ro
     ports:
       - "80:80"
       - "443:443"
@@ -111,6 +112,7 @@ volumes:
   static_volume:
   media_volume:
   frontend_build:
+  app_volume:
 
 networks:
   applicant_network:

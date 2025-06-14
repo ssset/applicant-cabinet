@@ -99,7 +99,7 @@ const InstitutionsApplyPage = () => {
                 website: values.website,
                 description: values.description,
                 institutionType: values.institutionType,
-                return_url: 'https://applicantcabinet.ru/payment-success"', // Обновленный URL возврата
+                return_url: 'https://applicantcabinet.ru/payment-success',
             });
 
             window.location.href = paymentResponse.payment_url;
@@ -397,7 +397,7 @@ const InstitutionsApplyPage = () => {
                                                 </div>
 
                                                 <p className="text-gray-700 mb-4">
-                                                    Стоимость регистрации учебного заведения в системе составляет <span className="font-semibold">2000 ₽</span>.
+                                                    Стоимость регистрации учебного заведения в системе составляет <span className="font-semibold">4 000 ₽</span>.
                                                     Оплата производится единоразово и включает:
                                                 </p>
 
@@ -473,7 +473,7 @@ const InstitutionsApplyPage = () => {
                                             <>Обработка платежа...</>
                                         ) : (
                                             <>
-                                                Оплатить 2000 ₽
+                                                Оплатить 4000 ₽
                                                 <CreditCard className="ml-2 h-4 w-4" />
                                             </>
                                         )}

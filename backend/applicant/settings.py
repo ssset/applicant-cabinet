@@ -8,7 +8,7 @@ from pathlib import Path
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = 'fvvf=6&pdq6vpjty9**#daej$5)jg&k*j5v6(sr$fwg^brq$!i'
-DEBUG = False
+DEBUG = True
 ALLOWED_HOSTS = ['applicantcabinet.ru', 'www.applicantcabinet.ru', 'localhost', '127.0.0.1']
 
 CORS_ALLOWED_ORIGINS = [
@@ -81,7 +81,7 @@ DATABASES = {
         'NAME': config('POSTGRES_DB', default='applicant_db'),
         'USER': config('POSTGRES_USER', default='applicant_user'),
         'PASSWORD': config('POSTGRES_PASSWORD'),
-        'HOST': 'db',
+        'HOST': 'localhost',
         'PORT': '5432',
     }
 }
@@ -147,6 +147,7 @@ SPECTACULAR_SETTINGS = {
     'COMPONENT_SPLIT_REQUEST': True,
 }
 
+DISABLE_FILE_LOGGING = True
 FRONTEND_URL = 'https://applicantcabinet.ru'
 LOGGING = {
     'version': 1,
@@ -163,40 +164,30 @@ LOGGING = {
             'class': 'logging.StreamHandler',
             'formatter': 'verbose',
         },
-        'file': {
-            'level': 'DEBUG',
-            'class': 'logging.FileHandler',
-            'filename': BASE_DIR / 'applicant.log',
-            'formatter': 'verbose',
-        },
-        'mail_admins': {
-            'level': 'ERROR',
-            'class': 'django.utils.log.AdminEmailHandler',
-        },
     },
     'loggers': {
         'django': {
-            'handlers': ['console', 'mail_admins'],
+            'handlers': ['console'],
             'level': 'INFO',
             'propagate': False,
         },
         'applicant': {
-            'handlers': ['console', 'file'],
+            'handlers': ['console'],
             'level': 'DEBUG',
             'propagate': False,
         },
         'users.views': {
-            'handlers': ['console', 'file'],
+            'handlers': ['console'],
             'level': 'DEBUG',
             'propagate': False,
         },
         'celery': {
-            'handlers': ['console', 'file'],
+            'handlers': ['console'],
             'level': 'DEBUG',
             'propagate': False,
         },
         'django.core.mail': {
-            'handlers': ['console', 'file'],
+            'handlers': ['console'],
             'level': 'DEBUG',
             'propagate': False,
         },
@@ -223,10 +214,20 @@ TIME_ZONE = 'UTC'
 USE_I18N = True
 USE_TZ = True
 
-SECURE_SSL_REDIRECT = True
 SESSION_COOKIE_SECURE = True
 CSRF_COOKIE_SECURE = True
 
+CSRF_TRUSTED_ORIGINS = [
+    'https://applicantcabinet.ru',
+    'https://*.applicantcabinet.ru',
+    'http://localhost',
+    'http://localhost:8000',
+    'http://localhost:3000',
+    'http://127.0.0.1:8000',
+    'http://127.0.0.1:3000',
+]
+
+STATIC_URL = '/static/'
 STATIC_ROOT = '/app/static'
 MEDIA_ROOT = '/app/media'
 
@@ -240,9 +241,9 @@ EMAIL_HOST = 'smtp.timeweb.ru'
 EMAIL_PORT = 465
 EMAIL_USE_TLS = False
 EMAIL_USE_SSL = True
-EMAIL_HOST_USER = 'notify@applicantcabinet.ru'
-EMAIL_HOST_PASSWORD = 'your_secure_email_password'
-DEFAULT_FROM_EMAIL = 'notify@applicantcabinet.ru'
+EMAIL_HOST_USER = config('EMAIL_HOST_USER', default='notify@applicantcabinet.ru')
+EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD')
+DEFAULT_FROM_EMAIL = config('EMAIL_DEFAULT_FROM_EMAIL', default='notify@applicantcabinet.ru')
 
 YUKASSA_SHOP_ID = '1055096'
 YUKASSA_SECRET_KEY = 'test_ugrsW-KjYHeZcvpG3QJo3ma0LIYJaSfkS6NQ8A5B2BU'

@@ -1,13 +1,19 @@
 # Базовый образ Python
 FROM python:3.11-slim
 
-# Установка системных зависимостей для psycopg2
+# Установка системных зависимостей, включая Tesseract
 RUN apt-get update && apt-get install -y \
+    tesseract-ocr \
+    tesseract-ocr-rus \
+    libtesseract-dev \
     libpq-dev \
     gcc \
     iputils-ping \
     net-tools \
     && rm -rf /var/lib/apt/lists/*
+
+# Установка переменной окружения для Tesseract
+ENV TESSDATA_PREFIX=/usr/share/tesseract-ocr/5/tessdata/
 
 # Установка рабочей директории
 WORKDIR /app
@@ -18,6 +24,10 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 # Копирование кода бэкенда
 COPY backend/ .
+
+# Создаём непривилегированного пользователя
+RUN useradd -m -u 1000 celeryuser
+USER celeryuser
 
 # Команда для запуска Celery
 CMD ["celery", "-A", "applicant", "worker", "--loglevel=info"]

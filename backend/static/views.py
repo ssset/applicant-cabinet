@@ -1,4 +1,4 @@
-import logging
+from drf_spectacular.utils import extend_schema, OpenApiResponse, OpenApiExample
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
@@ -11,12 +11,55 @@ from django.db.models.functions import ExtractWeekDay
 from datetime import timedelta, datetime
 from django.utils import timezone
 from django.core.cache import cache
+import logging
+from rest_framework.exceptions import ValidationError
 
 logger = logging.getLogger(__name__)
 
 class ApplicationStatsView(APIView):
     permission_classes = [IsAuthenticated, IsEmailVerified, IsModerator | IsAdminOrg]
 
+    @extend_schema(
+        summary="Статистика заявок по дням недели",
+        description="Возвращает количество заявок, поданных в организацию пользователя за текущую неделю, сгруппированное по дням недели (Пн-Вс). Данные кэшируются на 24 часа. Доступно для модераторов и администраторов организации.",
+        responses={
+            200: OpenApiResponse(
+                description="Статистика успешно получена",
+                examples=[
+                    OpenApiExample(
+                        name="Пример ответа",
+                        value=[
+                            {"name": "Пн", "Заявки": 10},
+                            {"name": "Вт", "Заявки": 8},
+                            {"name": "Ср", "Заявки": 5},
+                            {"name": "Чт", "Заявки": 12},
+                            {"name": "Пт", "Заявки": 9},
+                            {"name": "Сб", "Заявки": 3},
+                            {"name": "Вс", "Заявки": 2}
+                        ]
+                    )
+                ]
+            ),
+            401: OpenApiResponse(
+                description="Неавторизованный доступ",
+                examples=[
+                    OpenApiExample(
+                        name="Ошибка 401",
+                        value={"detail": "Authentication credentials were not provided."}
+                    )
+                ]
+            ),
+            403: OpenApiResponse(
+                description="Email не подтверждён или недостаточно прав",
+                examples=[
+                    OpenApiExample(
+                        name="Ошибка 403",
+                        value={"message": "У вас недостаточно прав или email не подтверждён"}
+                    )
+                ]
+            )
+        }
+    )
     def get(self, request):
         if not request.user.organization:
             logger.warning(f"User {request.user.email} has no organization assigned, returning empty data")
@@ -55,7 +98,7 @@ class ApplicationStatsView(APIView):
             data.append({'name': days[day], 'Заявки': count})
         count = next(
             (item['count'] for item in applications if item['day'] == 1),
-            0
+                0
         )
         data.append({'name': 'Вс', 'Заявки': count})
 
@@ -66,6 +109,47 @@ class ApplicationStatsView(APIView):
 class SpecialtyStatsView(APIView):
     permission_classes = [IsAuthenticated, IsEmailVerified, IsModerator | IsAdminOrg]
 
+    @extend_schema(
+        summary="Статистика специальностей по дням недели",
+        description="Возвращает количество заявок на специальности в организации пользователя за текущую неделю, сгруппированное по дням недели (Пн-Вс). Данные кэшируются на 24 часа. Доступно для модераторов и администраторов организации.",
+        responses={
+            200: OpenApiResponse(
+                description="Статистика успешно получена",
+                examples=[
+                    OpenApiExample(
+                        name="Пример ответа",
+                        value=[
+                            {"name": "Пн", "value": 15},
+                            {"name": "Вт", "value": 10},
+                            {"name": "Ср", "value": 7},
+                            {"name": "Чт", "value": 13},
+                            {"name": "Пт", "value": 8},
+                            {"name": "Сб", "value": 4},
+                            {"name": "Вс", "value": 1}
+                        ]
+                    )
+                ]
+            ),
+            401: OpenApiResponse(
+                description="Неавторизованный доступ",
+                examples=[
+                    OpenApiExample(
+                        name="Ошибка 401",
+                        value={"detail": "Authentication credentials were not provided."}
+                    )
+                ]
+            ),
+            403: OpenApiResponse(
+                description="Email не подтверждён или недостаточно прав",
+                examples=[
+                    OpenApiExample(
+                        name="Ошибка 403",
+                        value={"message": "У вас недостаточно прав или email не подтверждён"}
+                    )
+                ]
+            )
+        }
+    )
     def get(self, request):
         if not request.user.organization:
             logger.warning(f"User {request.user.email} has no organization assigned, returning empty data")
@@ -115,6 +199,47 @@ class SpecialtyStatsView(APIView):
 class ActivityStatsView(APIView):
     permission_classes = [IsAuthenticated, IsEmailVerified, IsModerator | IsAdminOrg]
 
+    @extend_schema(
+        summary="Статистика активности по дням недели",
+        description="Возвращает количество заявок в организации пользователя за текущую неделю, сгруппированное по дням недели (Пн-Вс). Данные кэшируются на 24 часа. Доступно для модераторов и администраторов организации.",
+        responses={
+            200: OpenApiResponse(
+                description="Статистика успешно получена",
+                examples=[
+                    OpenApiExample(
+                        name="Пример ответа",
+                        value=[
+                            {"name": "Пн", "Активность": 12},
+                            {"name": "Вт", "Активность": 9},
+                            {"name": "Ср", "Активность": 6},
+                            {"name": "Чт", "Активность": 11},
+                            {"name": "Пт", "Активность": 7},
+                            {"name": "Сб", "Активность": 2},
+                            {"name": "Вс", "Активность": 3}
+                        ]
+                    )
+                ]
+            ),
+            401: OpenApiResponse(
+                description="Неавторизованный доступ",
+                examples=[
+                    OpenApiExample(
+                        name="Ошибка 401",
+                        value={"detail": "Authentication credentials were not provided."}
+                    )
+                ]
+            ),
+            403: OpenApiResponse(
+                description="Email не подтверждён или недостаточно прав",
+                examples=[
+                    OpenApiExample(
+                        name="Ошибка 403",
+                        value={"message": "У вас недостаточно прав или email не подтверждён"}
+                    )
+                ]
+            )
+        }
+    )
     def get(self, request):
         if not request.user.organization:
             logger.warning(f"User {request.user.email} has no organization assigned, returning empty data")
@@ -164,6 +289,56 @@ class ActivityStatsView(APIView):
 class ModeratorActivityStatsView(APIView):
     permission_classes = [IsAuthenticated, IsEmailVerified, IsAdminOrg]
 
+    @extend_schema(
+        summary="Статистика активности модераторов по дням недели",
+        description="Возвращает количество обновлённых заявок в организации пользователя за текущую неделю, сгруппированное по дням недели (Пн-Вс). Данные кэшируются на 24 часа. Доступно только для администраторов организации.",
+        responses={
+            200: OpenApiResponse(
+                description="Статистика успешно получена",
+                examples=[
+                    OpenApiExample(
+                        name="Пример ответа",
+                        value=[
+                            {"name": "Пн", "Активность": 5},
+                            {"name": "Вт", "Активность": 4},
+                            {"name": "Ср", "Активность": 3},
+                            {"name": "Чт", "Активность": 6},
+                            {"name": "Пт", "Активность": 2},
+                            {"name": "Сб", "Активность": 1},
+                            {"name": "Вс", "Активность": 0}
+                        ]
+                    )
+                ]
+            ),
+            400: OpenApiResponse(
+                description="Нет привязанной организации",
+                examples=[
+                    OpenApiExample(
+                        name="Ошибка 400",
+                        value={"detail": "User has no organization assigned"}
+                    )
+                ]
+            ),
+            401: OpenApiResponse(
+                description="Неавторизованный доступ",
+                examples=[
+                    OpenApiExample(
+                        name="Ошибка 401",
+                        value={"detail": "Authentication credentials were not provided."}
+                    )
+                ]
+            ),
+            403: OpenApiResponse(
+                description="Email не подтверждён или недостаточно прав",
+                examples=[
+                    OpenApiExample(
+                        name="Ошибка 403",
+                        value={"message": "У вас недостаточно прав или email не подтверждён"}
+                    )
+                ]
+            )
+        }
+    )
     def get(self, request):
         if not request.user.organization:
             raise ValidationError("User has no organization assigned")
@@ -212,6 +387,52 @@ class ModeratorActivityStatsView(APIView):
 class SystemStatsView(APIView):
     permission_classes = [IsAuthenticated, IsEmailVerified, IsAdminApp]
 
+    @extend_schema(
+        summary="Системная статистика по месяцам",
+        description="Возвращает количество заявок во всей системе за последние 30 недель, сгруппированное по месяцам (Янв-Дек). Данные кэшируются на 24 часа. Доступно только для администраторов системы.",
+        responses={
+            200: OpenApiResponse(
+                description="Статистика успешно получена",
+                examples=[
+                    OpenApiExample(
+                        name="Пример ответа",
+                        value=[
+                            {"name": "Янв", "Заявки": 100},
+                            {"name": "Фев", "Заявки": 120},
+                            {"name": "Мар", "Заявки": 90},
+                            {"name": "Апр", "Заявки": 110},
+                            {"name": "Май", "Заявки": 130},
+                            {"name": "Июн", "Заявки": 80},
+                            {"name": "Июл", "Заявки": 70},
+                            {"name": "Авг", "Заявки": 60},
+                            {"name": "Сен", "Заявки": 140},
+                            {"name": "Окт", "Заявки": 150},
+                            {"name": "Ноя", "Заявки": 160},
+                            {"name": "Дек", "Заявки": 170}
+                        ]
+                    )
+                ]
+            ),
+            401: OpenApiResponse(
+                description="Неавторизованный доступ",
+                examples=[
+                    OpenApiExample(
+                        name="Ошибка 401",
+                        value={"detail": "Authentication credentials were not provided."}
+                    )
+                ]
+            ),
+            403: OpenApiResponse(
+                description="Email не подтверждён или недостаточно прав",
+                examples=[
+                    OpenApiExample(
+                        name="Ошибка 403",
+                        value={"message": "У вас недостаточно прав или email не подтверждён"}
+                    )
+                ]
+            )
+        }
+    )
     def get(self, request):
         cache_key = f"system_stats_{timezone.now().date()}"
         cached_data = cache.get(cache_key)
@@ -246,6 +467,43 @@ class SystemStatsView(APIView):
 class InstitutionStatsView(APIView):
     permission_classes = [IsAuthenticated, IsEmailVerified, IsAdminApp]
 
+    @extend_schema(
+        summary="Статистика по организациям",
+        description="Возвращает статистику по количеству заявок для каждой организации. Если организаций с малым количеством заявок (<5) много, они объединяются в категорию 'Другие'. Данные кэшируются на 1 час. Доступно только для администраторов системы.",
+        responses={
+            200: OpenApiResponse(
+                description="Статистика успешно получена",
+                examples=[
+                    OpenApiExample(
+                        name="Пример ответа",
+                        value=[
+                            {"name": "Университет А", "value": 50},
+                            {"name": "Университет Б", "value": 30},
+                            {"name": "Другие", "value": 10}
+                        ]
+                    )
+                ]
+            ),
+            401: OpenApiResponse(
+                description="Неавторизованный доступ",
+                examples=[
+                    OpenApiExample(
+                        name="Ошибка 401",
+                        value={"detail": "Authentication credentials were not provided."}
+                    )
+                ]
+            ),
+            403: OpenApiResponse(
+                description="Email не подтверждён или недостаточно прав",
+                examples=[
+                    OpenApiExample(
+                        name="Ошибка 403",
+                        value={"message": "У вас недостаточно прав или email не подтверждён"}
+                    )
+                ]
+            )
+        }
+    )
     def get(self, request):
         cache_key = "institution_stats"
         cached_data = cache.get(cache_key)
@@ -275,6 +533,47 @@ class InstitutionStatsView(APIView):
 class AdminActivityStatsView(APIView):
     permission_classes = [IsAuthenticated, IsEmailVerified, IsAdminApp]
 
+    @extend_schema(
+        summary="Статистика активности администраторов по дням недели",
+        description="Возвращает количество обновлённых заявок во всей системе за последнюю неделю, сгруппированное по дням недели (Вс-Сб). Данные кэшируются на 24 часа. Доступно только для администраторов системы.",
+        responses={
+            200: OpenApiResponse(
+                description="Статистика успешно получена",
+                examples=[
+                    OpenApiExample(
+                        name="Пример ответа",
+                        value=[
+                            {"name": "Вс", "Активность": 5},
+                            {"name": "Пн", "Активность": 20},
+                            {"name": "Вт", "Активность": 15},
+                            {"name": "Ср", "Активность": 10},
+                            {"name": "Чт", "Активность": 12},
+                            {"name": "Пт", "Активность": 8},
+                            {"name": "Сб", "Активность": 3}
+                        ]
+                    )
+                ]
+            ),
+            401: OpenApiResponse(
+                description="Неавторизованный доступ",
+                examples=[
+                    OpenApiExample(
+                        name="Ошибка 401",
+                        value={"detail": "Authentication credentials were not provided."}
+                    )
+                ]
+            ),
+            403: OpenApiResponse(
+                description="Email не подтверждён или недостаточно прав",
+                examples=[
+                    OpenApiExample(
+                        name="Ошибка 403",
+                        value={"message": "У вас недостаточно прав или email не подтверждён"}
+                    )
+                ]
+            )
+        }
+    )
     def get(self, request):
         cache_key = f"admin_activity_stats_{timezone.now().date()}"
         cached_data = cache.get(cache_key)
